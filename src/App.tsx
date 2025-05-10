@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import DashboardPage from "./pages/DashboardPage";
 import AuthPage from "./pages/AuthPage";
 import NewTicketPage from "./pages/NewTicketPage";
+import TicketsPage from "./pages/TicketsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/" element={<DashboardPage />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/tickets/new" element={<NewTicketPage />} />
+            <Route path="/tickets" element={<TicketsPage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
