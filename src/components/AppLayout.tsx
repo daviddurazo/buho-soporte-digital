@@ -53,7 +53,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           { label: 'Dashboard', href: '/' },
           { label: 'Gestionar Tickets', href: '/tickets' },
           { label: 'Gestionar Usuarios', href: '/users' },
-          { label: 'Configuración', href: '/settings' },
+          { label: 'Configuración', href: '/config' },
           { label: 'Reportes', href: '/reports' },
         ];
       default:
@@ -119,7 +119,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <DropdownMenuItem className="cursor-pointer">
                   Mi Perfil
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => window.location.href = "/config"}>
                   Configuraciones
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

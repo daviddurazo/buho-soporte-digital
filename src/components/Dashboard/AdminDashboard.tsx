@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -462,7 +461,7 @@ const AdminDashboard: React.FC = () => {
                     ))}
                   </CardContent>
                   <div className="p-4 border-t flex justify-end">
-                    <Button size="sm">Añadir Categoría</Button>
+                    <Button size="sm" onClick={() => window.location.href = "/config"}>Ir a Configuración</Button>
                   </div>
                 </Card>
                 
