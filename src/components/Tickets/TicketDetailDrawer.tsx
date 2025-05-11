@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Drawer,
@@ -51,7 +50,7 @@ import {
   X,
   FileImage,
   FileCode,
-  FilePencil
+  FilePen
 } from 'lucide-react';
 
 interface TicketDetailDrawerProps {
@@ -175,7 +174,7 @@ export const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
     } else if (mimeType === 'application/json' || mimeType.includes('javascript')) {
       return <FileCode className="h-4 w-4" />;
     } else {
-      return <FilePencil className="h-4 w-4" />;
+      return <FilePen className="h-4 w-4" />;
     }
   };
   
