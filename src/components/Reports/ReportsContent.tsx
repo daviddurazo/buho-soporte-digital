@@ -9,11 +9,12 @@ import { PieChartView } from '@/components/Reports/PieChartView';
 import { TicketTable } from '@/components/Reports/TicketTable';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { CalendarRange, BarChart, LineChart, PieChart, Download, FileCsv, FileText } from 'lucide-react';
+import { CalendarRange, BarChart, LineChart, PieChart, Download, Files, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { DateRange } from 'react-day-picker';
 
 export const ReportsContent: React.FC = () => {
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>({
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
     to: new Date(),
   });
@@ -67,7 +68,7 @@ export const ReportsContent: React.FC = () => {
         <h1 className="text-3xl font-bold tracking-tight">Reportes</h1>
         <div className="flex gap-2">
           <Button onClick={exportCSV} disabled={isLoading} variant="outline">
-            <FileCsv className="mr-2 h-4 w-4" />
+            <Files className="mr-2 h-4 w-4" />
             Exportar CSV
           </Button>
           <Button onClick={exportPDF} disabled={isLoading} variant="outline">

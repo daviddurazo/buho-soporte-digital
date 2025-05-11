@@ -15,7 +15,7 @@ import {
 
 interface DateRangePickerProps {
   date: DateRange | undefined;
-  onDateChange: (date: DateRange | undefined) => void;
+  onDateChange: React.Dispatch<React.SetStateAction<DateRange | undefined>>;
 }
 
 export function DateRangePicker({ date, onDateChange }: DateRangePickerProps) {
