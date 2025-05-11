@@ -11,6 +11,7 @@ import NewTicketPage from "./pages/NewTicketPage";
 import TicketsPage from "./pages/TicketsPage";
 import UsersPage from "./pages/UsersPage";
 import ConfigPage from "./pages/ConfigPage";
+import ReportsPage from "./pages/ReportsPage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
 
@@ -31,6 +32,7 @@ function App() {
               <Route path="/tickets" element={<TicketsPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/config" element={<ConfigPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
