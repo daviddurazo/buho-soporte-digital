@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -12,11 +13,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PaintbrushIcon, BellIcon, Languages, Eye, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
+interface NotificationSettings {
+  email: boolean;
+  browser: boolean;
+  sound: boolean;
+  updates: boolean;
+  tickets: boolean;
+}
+
+interface UserSettings {
+  darkMode: boolean;
+  fontSize: string;
+  language: string;
+  highContrast: boolean;
+  notifications: NotificationSettings;
+}
+
 const UserSettingsPage: React.FC = () => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const { theme, setTheme } = useTheme();
   
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<UserSettings>({
     darkMode: theme === 'dark',
     fontSize: 'medium',
     language: 'es',
@@ -42,17 +59,16 @@ const UserSettingsPage: React.FC = () => {
     return <Navigate to="/auth" />;
   }
   
-  const handleToggleSettings = (key: keyof typeof settings, nestedKey?: string) => {
+  const handleToggleSettings = (key: keyof UserSettings, nestedKey?: string) => {
     if (nestedKey) {
       setSettings(prev => ({
         ...prev,
         [key]: {
-          ...prev[key as keyof typeof prev],
-          [nestedKey]: !prev[key as keyof typeof prev][nestedKey as keyof typeof prev[keyof typeof prev]]
+          ...prev[key] as Record<string, unknown>,
+          [nestedKey]: !((prev[key] as Record<string, boolean>)[nestedKey])
         }
       }));
-    } else {
-      // @ts-ignore - Dynamic handling for boolean properties
+    } else if (typeof settings[key] === 'boolean') {
       setSettings(prev => ({
         ...prev,
         [key]: !prev[key]
@@ -65,7 +81,7 @@ const UserSettingsPage: React.FC = () => {
     }
   };
   
-  const handleSelectChange = (key: keyof typeof settings, value: string) => {
+  const handleSelectChange = (key: keyof UserSettings, value: string) => {
     setSettings(prev => ({
       ...prev,
       [key]: value

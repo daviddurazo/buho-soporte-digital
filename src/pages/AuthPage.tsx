@@ -28,15 +28,22 @@ const AuthPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-unison-blue to-blue-900 p-4">
       <div className="w-full max-w-md">
         {mode === 'login' && (
-          <LoginForm />
+          <LoginForm
+            onSwitchToRegister={() => setMode('register')}
+            onSwitchToForgotPassword={() => setMode('forgot-password')}
+          />
         )}
         
         {mode === 'register' && (
-          <RegisterForm />
+          <RegisterForm
+            onSwitchToLogin={() => setMode('login')}
+          />
         )}
         
         {mode === 'forgot-password' && (
-          <ForgotPasswordForm />
+          <ForgotPasswordForm
+            onSwitchToLogin={() => setMode('login')}
+          />
         )}
         
         {mode === 'login' && (

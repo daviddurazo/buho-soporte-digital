@@ -23,8 +23,8 @@ import {
   Search
 } from 'lucide-react';
 
-// Mock data for tickets
-const mockTickets: Ticket[] = [
+// Mock data for tickets - updated with proper field name assignedToId instead of assigneeId
+const mockTickets: (Ticket & { dueDate?: string })[] = [
   {
     id: 'TK-1001',
     title: 'No puedo acceder a mi cuenta de correo institucional',
@@ -35,7 +35,8 @@ const mockTickets: Ticket[] = [
     createdAt: '2025-05-01T10:30:00Z',
     updatedAt: '2025-05-01T14:20:00Z',
     creatorId: 'user-123',
-    assigneeId: 'tech-001',
+    assignedToId: 'tech-001',
+    dueDate: '2025-05-03T14:20:00Z'
   },
   {
     id: 'TK-1002',
@@ -47,7 +48,8 @@ const mockTickets: Ticket[] = [
     createdAt: '2025-05-01T09:15:00Z',
     updatedAt: '2025-05-01T09:45:00Z',
     creatorId: 'user-456',
-    assigneeId: 'tech-001',
+    assignedToId: 'tech-001',
+    dueDate: '2025-05-02T09:45:00Z'
   },
   {
     id: 'TK-1003',
@@ -59,7 +61,8 @@ const mockTickets: Ticket[] = [
     createdAt: '2025-05-02T11:00:00Z',
     updatedAt: '2025-05-02T11:00:00Z',
     creatorId: 'user-789',
-    assigneeId: 'tech-001',
+    assignedToId: 'tech-001',
+    dueDate: '2025-05-04T11:00:00Z'
   },
   {
     id: 'TK-1004',
@@ -71,7 +74,8 @@ const mockTickets: Ticket[] = [
     createdAt: '2025-05-03T08:30:00Z',
     updatedAt: '2025-05-03T08:30:00Z',
     creatorId: 'user-101',
-    assigneeId: 'tech-001',
+    assignedToId: 'tech-001',
+    dueDate: '2025-05-06T08:30:00Z'
   },
   {
     id: 'TK-1005',
@@ -83,7 +87,8 @@ const mockTickets: Ticket[] = [
     createdAt: '2025-05-04T13:45:00Z',
     updatedAt: '2025-05-04T14:30:00Z',
     creatorId: 'user-202',
-    assigneeId: 'tech-001',
+    assignedToId: 'tech-001',
+    dueDate: '2025-05-05T13:45:00Z'
   },
 ];
 
@@ -170,8 +175,15 @@ export const TechnicianTickets: React.FC = () => {
   });
   
   // Handle row click to open drawer
-  const handleRowClick = (ticket: Ticket) => {
-    setSelectedTicket(ticket);
+  const handleRowClick = (ticket: Ticket & { dueDate?: string }) => {
+    // Make sure ticket has dueDate before passing to drawer
+    if (!ticket.dueDate) {
+      ticket = {
+        ...ticket,
+        dueDate: new Date().toISOString() // Default dueDate if missing
+      };
+    }
+    setSelectedTicket(ticket as Ticket & { dueDate: string });
     setIsDrawerOpen(true);
   };
   
