@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Projector, BookOpen, FileBarChart, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const dummyTickets = [
   {
@@ -32,8 +33,10 @@ export const ProfessorDashboard: React.FC = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Dashboard de Profesor</h2>
-        <Button className="bg-unison-yellow text-black hover:bg-amber-600">
-          <FileText className="mr-2 h-4 w-4" /> Reportar Nueva Incidencia
+        <Button className="bg-unison-yellow text-black hover:bg-amber-600" asChild>
+          <Link to="/tickets/new">
+            <FileText className="mr-2 h-4 w-4" /> Reportar Nueva Incidencia
+          </Link>
         </Button>
       </div>
       
@@ -44,14 +47,20 @@ export const ProfessorDashboard: React.FC = () => {
             <CardDescription>Reporta problemas con herramientas</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-2">
-            <Button variant="outline" className="justify-start">
-              <Projector className="mr-2 h-4 w-4" /> Proyector de Aula
+            <Button variant="outline" className="justify-start" asChild>
+              <Link to="/tickets/new">
+                <Projector className="mr-2 h-4 w-4" /> Proyector de Aula
+              </Link>
             </Button>
-            <Button variant="outline" className="justify-start">
-              <BookOpen className="mr-2 h-4 w-4" /> Sitio del Curso
+            <Button variant="outline" className="justify-start" asChild>
+              <Link to="/tickets/new">
+                <BookOpen className="mr-2 h-4 w-4" /> Sitio del Curso
+              </Link>
             </Button>
-            <Button variant="outline" className="justify-start">
-              <FileBarChart className="mr-2 h-4 w-4" /> Sistema de Calificaciones
+            <Button variant="outline" className="justify-start" asChild>
+              <Link to="/tickets/new">
+                <FileBarChart className="mr-2 h-4 w-4" /> Sistema de Calificaciones
+              </Link>
             </Button>
           </CardContent>
         </Card>
@@ -65,27 +74,29 @@ export const ProfessorDashboard: React.FC = () => {
             {tickets.length > 0 ? (
               <div className="space-y-3">
                 {tickets.map(ticket => (
-                  <div key={ticket.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-md">
-                    <div>
-                      <p className="font-medium">{ticket.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(ticket.createdAt).toLocaleDateString('es-MX')}
-                      </p>
+                  <Link to="/tickets" key={ticket.id} className="block">
+                    <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100">
+                      <div>
+                        <p className="font-medium">{ticket.title}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(ticket.createdAt).toLocaleDateString('es-MX')}
+                        </p>
+                      </div>
+                      <div>
+                        <span className={`
+                          px-2 py-1 rounded-full text-xs font-medium
+                          ${ticket.status === 'nuevo' ? 'bg-blue-100 text-blue-800' : ''}
+                          ${ticket.status === 'asignado' ? 'bg-purple-100 text-purple-800' : ''}
+                          ${ticket.status === 'en_progreso' ? 'bg-yellow-100 text-yellow-800' : ''}
+                          ${ticket.status === 'resuelto' ? 'bg-green-100 text-green-800' : ''}
+                        `}>
+                          {ticket.status === 'nuevo' ? 'Nuevo' : 
+                            ticket.status === 'asignado' ? 'Asignado' :
+                              ticket.status === 'en_progreso' ? 'En Progreso' : 'Resuelto'}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className={`
-                        px-2 py-1 rounded-full text-xs font-medium
-                        ${ticket.status === 'nuevo' ? 'bg-blue-100 text-blue-800' : ''}
-                        ${ticket.status === 'asignado' ? 'bg-purple-100 text-purple-800' : ''}
-                        ${ticket.status === 'en_progreso' ? 'bg-yellow-100 text-yellow-800' : ''}
-                        ${ticket.status === 'resuelto' ? 'bg-green-100 text-green-800' : ''}
-                      `}>
-                        {ticket.status === 'nuevo' ? 'Nuevo' : 
-                          ticket.status === 'asignado' ? 'Asignado' :
-                            ticket.status === 'en_progreso' ? 'En Progreso' : 'Resuelto'}
-                      </span>
-                    </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (

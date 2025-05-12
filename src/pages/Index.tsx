@@ -10,10 +10,22 @@ const Index = () => {
   useEffect(() => {
     if (!isLoading) {
       if (isAuthenticated) {
-        if (user && (user.role === 'admin' || user.role === 'technician')) {
-          navigate('/tickets');
+        if (user) {
+          // Redirigir según el rol del usuario
+          switch (user.role) {
+            case 'admin':
+            case 'technician':
+              navigate('/dashboard');
+              break;
+            case 'student':
+            case 'professor':
+              navigate('/dashboard');
+              break;
+            default:
+              navigate('/dashboard');
+          }
         } else {
-          navigate('/');
+          navigate('/dashboard');
         }
       } else {
         navigate('/auth');

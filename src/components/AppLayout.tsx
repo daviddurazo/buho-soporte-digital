@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { User, Bell, Menu, X } from 'lucide-react';
 import { UnisonLogo } from './UnisonLogo';
+import { Link, useLocation } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ interface AppLayoutProps {
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const location = useLocation();
   
   const handleLogout = () => {
     logout();
@@ -30,27 +32,27 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     switch (user?.role) {
       case 'student':
         return [
-          { label: 'Dashboard', href: '/' },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Mis Tickets', href: '/tickets' },
           { label: 'Nuevo Ticket', href: '/tickets/new' },
         ];
       case 'professor':
         return [
-          { label: 'Dashboard', href: '/' },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Mis Tickets', href: '/tickets' },
           { label: 'Nuevo Ticket', href: '/tickets/new' },
           { label: 'Horarios', href: '/schedule' },
         ];
       case 'technician':
         return [
-          { label: 'Dashboard', href: '/' },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Tickets Asignados', href: '/tickets/assigned' },
           { label: 'Todos los Tickets', href: '/tickets' },
           { label: 'Reportes', href: '/reports' },
         ];
       case 'admin':
         return [
-          { label: 'Dashboard', href: '/' },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Gestionar Tickets', href: '/tickets' },
           { label: 'Gestionar Usuarios', href: '/users' },
           { label: 'Configuración', href: '/config' },
@@ -58,7 +60,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         ];
       default:
         return [
-          { label: 'Dashboard', href: '/' },
+          { label: 'Dashboard', href: '/dashboard' },
           { label: 'Tickets', href: '/tickets' },
         ];
     }
@@ -81,10 +83,10 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             >
               <Menu className="h-6 w-6" />
             </Button>
-            <a href="/" className="flex items-center space-x-2">
+            <Link to="/dashboard" className="flex items-center space-x-2">
               <UnisonLogo size="sm" className="bg-white rounded-full p-1" />
               <span className="font-bold text-lg hidden sm:inline">Soporte Digital</span>
-            </a>
+            </Link>
           </div>
           
           <div className="flex items-center space-x-2">
@@ -119,8 +121,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                 <DropdownMenuItem className="cursor-pointer">
                   Mi Perfil
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer" onClick={() => window.location.href = "/config"}>
-                  Configuraciones
+                <DropdownMenuItem className="cursor-pointer" asChild>
+                  <Link to="/config">Configuraciones</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
@@ -155,14 +157,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         
         <nav className="p-4 space-y-2">
           {navLinks.map((link, i) => (
-            <a 
+            <Link 
               key={i} 
-              href={link.href}
-              className="block px-3 py-2 rounded-md hover:bg-gray-100 text-gray-800 font-medium"
+              to={link.href}
+              className={`block px-3 py-2 rounded-md hover:bg-gray-100 text-gray-800 font-medium ${
+                location.pathname === link.href ? 'bg-gray-100' : ''
+              }`}
               onClick={() => setSidebarOpen(false)}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
       </div>
@@ -172,13 +176,15 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <nav className="hidden md:block w-64 bg-white p-4 border-r min-h-screen overflow-y-auto">
           <div className="space-y-2">
             {navLinks.map((link, i) => (
-              <a 
+              <Link 
                 key={i} 
-                href={link.href}
-                className="block px-3 py-2 rounded-md hover:bg-gray-100 text-gray-800 font-medium"
+                to={link.href}
+                className={`block px-3 py-2 rounded-md hover:bg-gray-100 text-gray-800 font-medium ${
+                  location.pathname === link.href ? 'bg-gray-100' : ''
+                }`}
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
         </nav>

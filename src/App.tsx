@@ -14,6 +14,9 @@ import ConfigPage from "./pages/ConfigPage";
 import ReportsPage from "./pages/ReportsPage";
 import NotFound from "./pages/NotFound";
 import { useState } from "react";
+import AssignedTicketsPage from "./pages/AssignedTicketsPage";
+import SchedulePage from "./pages/SchedulePage";
+import Index from "./pages/Index";
 
 function App() {
   const [queryClient] = useState(() => new QueryClient());
@@ -26,13 +29,16 @@ function App() {
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<DashboardPage />} />
+              <Route path="/" element={<Index />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/tickets/new" element={<NewTicketPage />} />
               <Route path="/tickets" element={<TicketsPage />} />
+              <Route path="/tickets/assigned" element={<AssignedTicketsPage />} />
               <Route path="/users" element={<UsersPage />} />
               <Route path="/config" element={<ConfigPage />} />
               <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/schedule" element={<SchedulePage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
