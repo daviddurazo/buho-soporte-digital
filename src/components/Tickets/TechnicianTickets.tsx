@@ -146,7 +146,7 @@ export const TechnicianTickets: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   
   // States for selected ticket and drawer
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<(Ticket & { dueDate: string }) | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // States for ticket selection (mass actions)
@@ -176,14 +176,15 @@ export const TechnicianTickets: React.FC = () => {
   
   // Handle row click to open drawer
   const handleRowClick = (ticket: Ticket) => {
-    // Create a new object that guarantees dueDate exists
+    // Create a new object that guarantees dueDate exists and is a string
     const ticketWithDueDate = {
       ...ticket,
       dueDate: ticket.dueDate || new Date().toISOString() // Use existing dueDate or set default
-    } as Ticket & { dueDate: string }; // Add type assertion to satisfy TypeScript
+    };
     
     // Now TypeScript knows ticketWithDueDate always has a dueDate property
-    setSelectedTicket(ticketWithDueDate);
+    // Use type assertion after creating the object with required properties
+    setSelectedTicket(ticketWithDueDate as Ticket & { dueDate: string });
     setIsDrawerOpen(true);
   };
   
