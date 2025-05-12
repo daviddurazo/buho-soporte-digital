@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -179,7 +180,7 @@ export const TechnicianTickets: React.FC = () => {
     const ticketWithDueDate = {
       ...ticket,
       dueDate: ticket.dueDate || new Date().toISOString() // Use existing dueDate or set default
-    };
+    } as Ticket & { dueDate: string }; // Add type assertion to satisfy TypeScript
     
     // Now TypeScript knows ticketWithDueDate always has a dueDate property
     setSelectedTicket(ticketWithDueDate);
