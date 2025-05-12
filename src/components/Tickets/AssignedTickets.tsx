@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,7 +31,8 @@ import {
   Tag,
   AlertCircle,
   CheckCircle,
-  RotateCw
+  RotateCw,
+  Loader2
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,80 +44,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { TicketDetailDrawer } from './TicketDetailDrawer';
 import { Ticket, TicketPriority, TicketStatus } from '@/types';
-
-// Updated mock data for tickets with proper types
-const mockAssignedTickets: Array<Ticket & { dueDate: string }> = [
-  {
-    id: 'TK-1001',
-    title: 'Problema con la impresora',
-    description: 'La impresora del departamento de ingeniería no está funcionando correctamente.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    status: 'en_progreso',
-    priority: 'alta',
-    category: 'hardware',
-    userId: 'user123',
-    assignedToId: 'tech001',
-    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(),
-    creatorId: 'user123'
-  },
-  {
-    id: 'TK-1002',
-    title: 'Actualización de software necesaria',
-    description: 'Necesitamos actualizar el software en los laboratorios.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
-    status: 'nuevo',
-    priority: 'media',
-    category: 'software',
-    userId: 'user456',
-    assignedToId: 'tech001',
-    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
-    creatorId: 'user456'
-  },
-  {
-    id: 'TK-1003',
-    title: 'Problema de red en aula 105',
-    description: 'Los estudiantes no pueden conectarse a la red WiFi en el aula 105.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    status: 'asignado',
-    priority: 'alta',
-    category: 'network',
-    userId: 'user789',
-    assignedToId: 'tech001',
-    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(),
-    creatorId: 'user789'
-  },
-  {
-    id: 'TK-1004',
-    title: 'Acceso al sistema académico',
-    description: 'No puedo acceder al sistema académico con mis credenciales.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 1).toISOString(),
-    status: 'nuevo',
-    priority: 'baja',
-    category: 'access',
-    userId: 'user101',
-    assignedToId: 'tech001',
-    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(),
-    creatorId: 'user101'
-  },
-  {
-    id: 'TK-1005',
-    title: 'Proyector no funciona en salón 303',
-    description: 'El proyector del salón 303 no está encendiendo.',
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
-    status: 'en_progreso',
-    priority: 'media',
-    category: 'hardware',
-    userId: 'user202',
-    assignedToId: 'tech001',
-    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 2).toISOString(),
-    creatorId: 'user202'
-  }
-];
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 
 const getPriorityBadge = (priority: TicketPriority) => {
   switch (priority) {
@@ -149,7 +80,9 @@ const getStatusBadge = (status: TicketStatus) => {
   }
 };
 
-const getSLARemaining = (dueDate: string) => {
+const getSLARemaining = (dueDate: string | null) => {
+  if (!dueDate) return null;
+  
   const due = new Date(dueDate);
   const now = new Date();
   const remaining = due.getTime() - now.getTime();
@@ -191,9 +124,9 @@ const getCategoryLabel = (category: string) => {
       return 'Hardware';
     case 'software':
       return 'Software';
-    case 'network':
+    case 'redes':
       return 'Red';
-    case 'access':
+    case 'acceso':
       return 'Acceso';
     default:
       return 'Otro';
@@ -201,17 +134,40 @@ const getCategoryLabel = (category: string) => {
 };
 
 export const AssignedTickets: React.FC = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<Ticket & { dueDate: string } | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const fetchAssignedTickets = async () => {
+    if (!user) return [];
+    
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('assigned_to_id', user.id);
+      
+    if (error) {
+      console.error('Error fetching tickets:', error);
+      throw error;
+    }
+    
+    return data;
+  };
+
+  const { data: assignedTickets = [], isLoading, error } = useQuery({
+    queryKey: ['assignedTickets', user?.id],
+    queryFn: fetchAssignedTickets,
+    enabled: !!user,
+  });
+
   // Filter tickets based on search query and filters
-  const filteredTickets = mockAssignedTickets.filter(ticket => {
+  const filteredTickets = assignedTickets.filter((ticket: Ticket) => {
     const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
+                        ticket.ticket_number.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
     const matchesCategory = categoryFilter === 'all' || ticket.category === categoryFilter;
     return matchesSearch && matchesPriority && matchesCategory;
@@ -229,33 +185,66 @@ export const AssignedTickets: React.FC = () => {
     if (selectedTickets.length === filteredTickets.length) {
       setSelectedTickets([]);
     } else {
-      setSelectedTickets(filteredTickets.map(t => t.id));
+      setSelectedTickets(filteredTickets.map((t: Ticket) => t.id));
     }
   };
 
-  const handleViewTicket = (ticket: typeof mockAssignedTickets[0]) => {
+  const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
     setDrawerOpen(true);
   };
 
-  const handleTicketAction = (action: string, ticketId?: string) => {
+  const handleTicketAction = async (action: string, ticketId?: string) => {
     const ticketsToAction = ticketId ? [ticketId] : selectedTickets;
     
-    switch (action) {
-      case 'changeStatus':
-        toast.success(`Estado actualizado para ${ticketsToAction.length} ticket(s)`);
-        break;
-      case 'addNote':
-        toast.success('Nota añadida correctamente');
-        break;
-      case 'reassign':
-        toast.success(`${ticketsToAction.length} ticket(s) reasignado(s) correctamente`);
-        break;
-      case 'resolve':
-        toast.success(`${ticketsToAction.length} ticket(s) marcado(s) como resueltos`);
-        break;
-      default:
-        break;
+    try {
+      switch (action) {
+        case 'changeStatus': {
+          // In a real app, you would implement a modal to select the new status
+          const newStatus: TicketStatus = 'en_progreso';
+          
+          for (const id of ticketsToAction) {
+            const { error } = await supabase
+              .from('tickets')
+              .update({ status: newStatus, updated_at: new Date().toISOString() })
+              .eq('id', id);
+              
+            if (error) throw error;
+          }
+          
+          toast.success(`Estado actualizado para ${ticketsToAction.length} ticket(s)`);
+          break;
+        }
+        case 'addNote':
+          // In a real app, you would implement a modal to add a note
+          toast.success('Nota añadida correctamente');
+          break;
+        case 'reassign':
+          // In a real app, you would implement a modal to select a new assignee
+          toast.success(`${ticketsToAction.length} ticket(s) reasignado(s) correctamente`);
+          break;
+        case 'resolve': {
+          for (const id of ticketsToAction) {
+            const { error } = await supabase
+              .from('tickets')
+              .update({ 
+                status: 'resuelto', 
+                updated_at: new Date().toISOString() 
+              })
+              .eq('id', id);
+              
+            if (error) throw error;
+          }
+          
+          toast.success(`${ticketsToAction.length} ticket(s) marcado(s) como resueltos`);
+          break;
+        }
+        default:
+          break;
+      }
+    } catch (error) {
+      console.error('Error performing action:', error);
+      toast.error('Ocurrió un error al realizar la acción');
     }
     
     // Reset selected tickets after bulk action
@@ -263,6 +252,24 @@ export const AssignedTickets: React.FC = () => {
       setSelectedTickets([]);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-2 text-lg text-gray-500">Cargando tickets...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 border border-red-200 bg-red-50 rounded-md text-red-600">
+        <p className="font-medium">Error al cargar los tickets</p>
+        <p className="text-sm">Por favor, intenta nuevamente más tarde.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -309,8 +316,8 @@ export const AssignedTickets: React.FC = () => {
                   <SelectItem value="all">Todas</SelectItem>
                   <SelectItem value="hardware">Hardware</SelectItem>
                   <SelectItem value="software">Software</SelectItem>
-                  <SelectItem value="network">Red</SelectItem>
-                  <SelectItem value="access">Acceso</SelectItem>
+                  <SelectItem value="redes">Red</SelectItem>
+                  <SelectItem value="acceso">Acceso</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -383,7 +390,7 @@ export const AssignedTickets: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredTickets.map((ticket) => (
+              filteredTickets.map((ticket: Ticket) => (
                 <TableRow 
                   key={ticket.id} 
                   className="cursor-pointer hover:bg-gray-50"
@@ -397,7 +404,7 @@ export const AssignedTickets: React.FC = () => {
                     />
                   </TableCell>
                   <TableCell>
-                    <div className="font-mono text-sm">{ticket.id}</div>
+                    <div className="font-mono text-sm">{ticket.ticket_number}</div>
                   </TableCell>
                   <TableCell>
                     <div className="font-medium">{ticket.title}</div>
@@ -408,17 +415,17 @@ export const AssignedTickets: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {getPriorityBadge(ticket.priority)}
+                    {getPriorityBadge(ticket.priority as TicketPriority)}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {getStatusBadge(ticket.status)}
+                    {getStatusBadge(ticket.status as TicketStatus)}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {getSLARemaining(ticket.dueDate)}
+                    {getSLARemaining(ticket.due_date)}
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
                     <div className="text-sm text-muted-foreground">
-                      {new Date(ticket.createdAt).toLocaleDateString()}
+                      {new Date(ticket.created_at).toLocaleDateString()}
                     </div>
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>

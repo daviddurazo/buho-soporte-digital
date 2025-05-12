@@ -9,6 +9,74 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      attachments: {
+        Row: {
+          created_at: string
+          filename: string
+          id: string
+          mime_type: string
+          path: string
+          size: number
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          filename: string
+          id?: string
+          mime_type: string
+          path: string
+          size: number
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          filename?: string
+          id?: string
+          mime_type?: string
+          path?: string
+          size?: number
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          read?: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -36,6 +104,115 @@ export type Database = {
           last_name?: string
           role?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ticket_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          ticket_id: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          ticket_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          ticket_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_comments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_history: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ticket_id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ticket_id: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ticket_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_history_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          assigned_to_id: string | null
+          category: string
+          created_at: string
+          creator_id: string | null
+          description: string
+          due_date: string | null
+          id: string
+          priority: string
+          status: string
+          ticket_number: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to_id?: string | null
+          category: string
+          created_at?: string
+          creator_id?: string | null
+          description: string
+          due_date?: string | null
+          id?: string
+          priority: string
+          status: string
+          ticket_number: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to_id?: string | null
+          category?: string
+          created_at?: string
+          creator_id?: string | null
+          description?: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          ticket_number?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }

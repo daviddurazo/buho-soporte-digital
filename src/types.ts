@@ -1,3 +1,4 @@
+
 // User related types
 export type UserRole = 'student' | 'professor' | 'technician' | 'admin';
 
@@ -17,35 +18,35 @@ export type TicketPriority = 'baja' | 'media' | 'alta' | 'crítica';
 
 export interface Ticket {
   id: string;
+  ticket_number: string;
   title: string;
   description: string;
   status: TicketStatus;
   priority: TicketPriority;
   category: string;
-  createdAt: string;
-  updatedAt: string;
-  creatorId: string;
-  userId?: string;
-  assignedToId?: string;
-  dueDate?: string; // Added dueDate as optional property
+  created_at: string;
+  updated_at: string;
+  creator_id: string | null;
+  assigned_to_id: string | null;
+  due_date: string | null;
 }
 
 export interface Comment {
   id: string;
   content: string;
-  createdAt: string;
-  ticketId: string;
-  userId: string;
+  created_at: string;
+  ticket_id: string;
+  user_id: string;
 }
 
 export interface Attachment {
   id: string;
   filename: string;
   path: string;
-  mimeType: string;
+  mime_type: string;
   size: number;
-  createdAt: string;
-  ticketId: string;
+  created_at: string;
+  ticket_id: string;
 }
 
 export interface Notification {
@@ -53,17 +54,17 @@ export interface Notification {
   title: string;
   description: string;
   read: boolean;
-  createdAt: string;
-  userId: string;
+  created_at: string;
+  user_id: string;
   type: 'info' | 'warning' | 'success' | 'error';
 }
 
 export interface TicketHistory {
   id: string;
   action: string;
-  createdAt: string;
-  ticketId: string;
-  userId: string;
+  created_at: string;
+  ticket_id: string;
+  user_id: string;
 }
 
 // Auth related types

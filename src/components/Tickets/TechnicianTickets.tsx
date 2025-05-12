@@ -20,100 +20,31 @@ import {
   ArrowDown,
   ArrowUp,
   SquareCheck,
-  Search
+  Search,
+  Loader2
 } from 'lucide-react';
-
-// Mock data for tickets - updated with proper field name assignedToId instead of assigneeId
-const mockTickets: Ticket[] = [
-  {
-    id: 'TK-1001',
-    title: 'No puedo acceder a mi cuenta de correo institucional',
-    description: 'Cuando intento iniciar sesión me dice que la contraseña es incorrecta, pero estoy seguro de que es la correcta',
-    status: 'asignado',
-    priority: 'alta',
-    category: 'correo_institucional',
-    createdAt: '2025-05-01T10:30:00Z',
-    updatedAt: '2025-05-01T14:20:00Z',
-    creatorId: 'user-123',
-    assignedToId: 'tech-001',
-    dueDate: '2025-05-03T14:20:00Z'
-  },
-  {
-    id: 'TK-1002',
-    title: 'Proyector de aula 305 no funciona',
-    description: 'El proyector no enciende y la clase comienza en 30 minutos',
-    status: 'en_progreso',
-    priority: 'crítica',
-    category: 'proyector_aula',
-    createdAt: '2025-05-01T09:15:00Z',
-    updatedAt: '2025-05-01T09:45:00Z',
-    creatorId: 'user-456',
-    assignedToId: 'tech-001',
-    dueDate: '2025-05-02T09:45:00Z'
-  },
-  {
-    id: 'TK-1003',
-    title: 'Software AutoCAD no se instala correctamente',
-    description: 'Aparece un error de compatibilidad durante la instalación',
-    status: 'nuevo',
-    priority: 'media',
-    category: 'software',
-    createdAt: '2025-05-02T11:00:00Z',
-    updatedAt: '2025-05-02T11:00:00Z',
-    creatorId: 'user-789',
-    assignedToId: 'tech-001',
-    dueDate: '2025-05-04T11:00:00Z'
-  },
-  {
-    id: 'TK-1004',
-    title: 'Red WiFi inestable en biblioteca',
-    description: 'La conexión se cae constantemente en la zona de estudio',
-    status: 'nuevo',
-    priority: 'baja',
-    category: 'redes',
-    createdAt: '2025-05-03T08:30:00Z',
-    updatedAt: '2025-05-03T08:30:00Z',
-    creatorId: 'user-101',
-    assignedToId: 'tech-001',
-    dueDate: '2025-05-06T08:30:00Z'
-  },
-  {
-    id: 'TK-1005',
-    title: 'Computadora de laboratorio no enciende',
-    description: 'PC #12 del laboratorio de informática no muestra señales de vida',
-    status: 'en_progreso',
-    priority: 'alta',
-    category: 'hardware',
-    createdAt: '2025-05-04T13:45:00Z',
-    updatedAt: '2025-05-04T14:30:00Z',
-    creatorId: 'user-202',
-    assignedToId: 'tech-001',
-    dueDate: '2025-05-05T13:45:00Z'
-  },
-];
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 
 // Helper function to calculate SLA remaining time
 const calculateSLARemaining = (ticket: Ticket): string => {
-  // For demo purposes, we'll create some logic based on priority and creation date
-  const creationDate = new Date(ticket.createdAt);
+  if (!ticket.due_date) return "No definido";
+
+  const dueDate = new Date(ticket.due_date);
   const now = new Date();
-  const hoursElapsed = Math.floor((now.getTime() - creationDate.getTime()) / (1000 * 60 * 60));
+  const hoursElapsed = Math.floor((now.getTime() - dueDate.getTime()) / (1000 * 60 * 60));
   
-  // Different SLA times based on priority
-  let slaHours = 0;
-  switch(ticket.priority) {
-    case 'crítica': slaHours = 4; break;
-    case 'alta': slaHours = 8; break;
-    case 'media': slaHours = 24; break;
-    case 'baja': slaHours = 48; break;
+  // If due date has passed
+  if (hoursElapsed > 0) {
+    return "¡Vencido!";
   }
   
-  const remainingHours = slaHours - hoursElapsed;
+  // Convert back to positive hours remaining
+  const remainingHours = Math.abs(hoursElapsed);
   
   // Return formatted string
-  if (remainingHours <= 0) {
-    return "¡Vencido!";
-  } else if (remainingHours <= 1) {
+  if (remainingHours <= 1) {
     return "< 1 hora";
   } else if (remainingHours < 24) {
     return `${remainingHours} horas`;
@@ -124,41 +55,59 @@ const calculateSLARemaining = (ticket: Ticket): string => {
 
 // Helper function to determine if SLA is critical
 const isSLACritical = (ticket: Ticket): boolean => {
-  const creationDate = new Date(ticket.createdAt);
+  if (!ticket.due_date) return false;
+  
+  const dueDate = new Date(ticket.due_date);
   const now = new Date();
-  const hoursElapsed = Math.floor((now.getTime() - creationDate.getTime()) / (1000 * 60 * 60));
+  const hoursRemaining = Math.floor((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60));
   
-  let slaHours = 0;
-  switch(ticket.priority) {
-    case 'crítica': slaHours = 4; break;
-    case 'alta': slaHours = 8; break;
-    case 'media': slaHours = 24; break;
-    case 'baja': slaHours = 48; break;
-  }
-  
-  return (slaHours - hoursElapsed) <= 2;
+  return hoursRemaining <= 2;
 };
 
 export const TechnicianTickets: React.FC = () => {
+  const { user } = useAuth();
   // States for filters
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
   
   // States for selected ticket and drawer
-  const [selectedTicket, setSelectedTicket] = useState<(Ticket & { dueDate: string }) | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   
   // States for ticket selection (mass actions)
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
+
+  // Fetch tickets from Supabase
+  const fetchTickets = async () => {
+    if (!user) return [];
+
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('assigned_to_id', user.id);
+
+    if (error) {
+      console.error('Error fetching tickets:', error);
+      throw error;
+    }
+
+    return data;
+  };
+
+  const { data: tickets = [], isLoading, error } = useQuery({
+    queryKey: ['technicianTickets', user?.id],
+    queryFn: fetchTickets,
+    enabled: !!user,
+  });
   
   // Apply filters to tickets
-  const filteredTickets = mockTickets.filter((ticket) => {
+  const filteredTickets = tickets.filter((ticket: Ticket) => {
     // Apply search query filter
     const matchesSearch = searchQuery 
       ? ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        ticket.id.toLowerCase().includes(searchQuery.toLowerCase())
+        ticket.ticket_number.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
     
     // Apply priority filter
@@ -176,15 +125,7 @@ export const TechnicianTickets: React.FC = () => {
   
   // Handle row click to open drawer
   const handleRowClick = (ticket: Ticket) => {
-    // Create a new object that guarantees dueDate exists and is a string
-    const ticketWithDueDate = {
-      ...ticket,
-      dueDate: ticket.dueDate || new Date().toISOString() // Use existing dueDate or set default
-    };
-    
-    // Now TypeScript knows ticketWithDueDate always has a dueDate property
-    // Use type assertion after creating the object with required properties
-    setSelectedTicket(ticketWithDueDate as Ticket & { dueDate: string });
+    setSelectedTicket(ticket);
     setIsDrawerOpen(true);
   };
   
@@ -208,16 +149,32 @@ export const TechnicianTickets: React.FC = () => {
   };
   
   // Handle mass actions
-  const handleMassChangeStatus = (status: TicketStatus) => {
+  const handleMassChangeStatus = async (status: TicketStatus) => {
     if (selectedTickets.length === 0) {
       toast.error('No hay tickets seleccionados');
       return;
     }
     
-    // In a real app, you'd call an API here
-    toast.success(`Estado actualizado a: ${translateStatus(status)} para ${selectedTickets.length} tickets`);
-    setSelectedTickets([]);
-    setSelectAll(false);
+    try {
+      for (const id of selectedTickets) {
+        const { error } = await supabase
+          .from('tickets')
+          .update({ 
+            status,
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', id);
+          
+        if (error) throw error;
+      }
+      
+      toast.success(`Estado actualizado a: ${translateStatus(status)} para ${selectedTickets.length} tickets`);
+      setSelectedTickets([]);
+      setSelectAll(false);
+    } catch (error) {
+      console.error('Error updating tickets:', error);
+      toast.error('Error al actualizar el estado de los tickets');
+    }
   };
   
   const handleMassReassign = () => {
@@ -274,6 +231,24 @@ export const TechnicianTickets: React.FC = () => {
       </Badge>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-2 text-lg text-gray-500">Cargando tickets...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 border border-red-200 bg-red-50 rounded-md text-red-600">
+        <p className="font-medium">Error al cargar los tickets</p>
+        <p className="text-sm">Por favor, intenta nuevamente más tarde.</p>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-4">
@@ -390,17 +365,17 @@ export const TechnicianTickets: React.FC = () => {
                       onCheckedChange={(checked) => handleSelectTicket(ticket.id, checked === true)}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">{ticket.id}</TableCell>
+                  <TableCell className="font-medium">{ticket.ticket_number}</TableCell>
                   <TableCell>{ticket.title}</TableCell>
                   <TableCell>{translateCategory(ticket.category)}</TableCell>
-                  <TableCell>{renderPriorityBadge(ticket.priority)}</TableCell>
-                  <TableCell>{renderStatusBadge(ticket.status)}</TableCell>
+                  <TableCell>{renderPriorityBadge(ticket.priority as TicketPriority)}</TableCell>
+                  <TableCell>{renderStatusBadge(ticket.status as TicketStatus)}</TableCell>
                   <TableCell>
                     <span className={`font-medium ${isSLACritical(ticket) ? 'text-red-600' : ''}`}>
                       {calculateSLARemaining(ticket)}
                     </span>
                   </TableCell>
-                  <TableCell>{new Date(ticket.createdAt).toLocaleString('es-ES', { 
+                  <TableCell>{new Date(ticket.created_at).toLocaleString('es-ES', { 
                     day: '2-digit', 
                     month: '2-digit', 
                     year: 'numeric',

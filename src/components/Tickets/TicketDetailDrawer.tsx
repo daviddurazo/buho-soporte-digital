@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { 
   Drawer,
   DrawerClose,
@@ -50,119 +51,223 @@ import {
   X,
   FileImage,
   FileCode,
-  FilePen
+  FilePen,
+  Loader2
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface TicketDetailDrawerProps {
-  ticket: Ticket & { dueDate: string }; // This ensures dueDate is required in this component
+  ticket: Ticket;
   isOpen: boolean;
   onClose: () => void;
 }
-
-// Mock data for comments
-const mockComments: Comment[] = [
-  {
-    id: 'comment-1',
-    content: 'He revisado el problema y parece ser un tema de permisos de acceso. Trabajando en ello.',
-    createdAt: '2025-05-01T14:15:00Z',
-    ticketId: 'TK-1001',
-    userId: 'tech-001'
-  },
-  {
-    id: 'comment-2',
-    content: '¿Ha intentado restablecer su contraseña usando el portal de autoservicio?',
-    createdAt: '2025-05-01T14:20:00Z',
-    ticketId: 'TK-1001',
-    userId: 'tech-001'
-  }
-];
-
-// Mock data for ticket history
-const mockHistory: TicketHistory[] = [
-  {
-    id: 'history-1',
-    action: 'Ticket creado por usuario',
-    createdAt: '2025-05-01T10:30:00Z',
-    ticketId: 'TK-1001',
-    userId: 'user-123'
-  },
-  {
-    id: 'history-2',
-    action: 'Ticket asignado a técnico',
-    createdAt: '2025-05-01T11:45:00Z',
-    ticketId: 'TK-1001',
-    userId: 'admin-001'
-  },
-  {
-    id: 'history-3',
-    action: 'Estado cambiado a "En progreso"',
-    createdAt: '2025-05-01T14:10:00Z',
-    ticketId: 'TK-1001',
-    userId: 'tech-001'
-  }
-];
-
-// Mock data for attachments
-const mockAttachments: Attachment[] = [
-  {
-    id: 'attach-1',
-    filename: 'error_screenshot.png',
-    path: '/uploads/error_screenshot.png',
-    mimeType: 'image/png',
-    size: 124500,
-    createdAt: '2025-05-01T10:30:00Z',
-    ticketId: 'TK-1001'
-  },
-  {
-    id: 'attach-2',
-    filename: 'log_file.txt',
-    path: '/uploads/log_file.txt',
-    mimeType: 'text/plain',
-    size: 5200,
-    createdAt: '2025-05-01T14:20:00Z',
-    ticketId: 'TK-1001'
-  }
-];
 
 export const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({ 
   ticket, 
   isOpen, 
   onClose 
 }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [newComment, setNewComment] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState<TicketStatus | ''>('');
-  const [selectedPriority, setSelectedPriority] = useState<TicketPriority | ''>('');
+  const [selectedStatus, setSelectedStatus] = useState<TicketStatus>(ticket.status as TicketStatus);
+  const [selectedPriority, setSelectedPriority] = useState<TicketPriority>(ticket.priority as TicketPriority);
   
   // Reset states when new ticket is loaded
-  React.useEffect(() => {
+  useEffect(() => {
     if (ticket) {
-      setSelectedStatus(ticket.status);
-      setSelectedPriority(ticket.priority);
+      setSelectedStatus(ticket.status as TicketStatus);
+      setSelectedPriority(ticket.priority as TicketPriority);
       setNewComment('');
     }
   }, [ticket]);
   
+  // Fetch comments for this ticket
+  const { data: comments = [], isLoading: isLoadingComments } = useQuery({
+    queryKey: ['ticketComments', ticket.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ticket_comments')
+        .select('*')
+        .eq('ticket_id', ticket.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: isOpen && !!ticket.id
+  });
+
+  // Fetch history for this ticket
+  const { data: history = [], isLoading: isLoadingHistory } = useQuery({
+    queryKey: ['ticketHistory', ticket.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ticket_history')
+        .select('*')
+        .eq('ticket_id', ticket.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: isOpen && !!ticket.id
+  });
+
+  // Fetch attachments for this ticket
+  const { data: attachments = [], isLoading: isLoadingAttachments } = useQuery({
+    queryKey: ['ticketAttachments', ticket.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('attachments')
+        .select('*')
+        .eq('ticket_id', ticket.id);
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: isOpen && !!ticket.id
+  });
+
+  // Mutation for adding comment
+  const addCommentMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Usuario no autenticado');
+      
+      // Add comment
+      const { error: commentError } = await supabase
+        .from('ticket_comments')
+        .insert({
+          content: newComment,
+          ticket_id: ticket.id,
+          user_id: user.id
+        });
+
+      if (commentError) throw commentError;
+      
+      // Add history entry about comment
+      const { error: historyError } = await supabase
+        .from('ticket_history')
+        .insert({
+          ticket_id: ticket.id,
+          user_id: user.id,
+          action: 'Comentario añadido'
+        });
+        
+      if (historyError) throw historyError;
+    },
+    onSuccess: () => {
+      toast.success('Comentario añadido correctamente');
+      setNewComment('');
+      // Refresh comments and history data
+      queryClient.invalidateQueries({ queryKey: ['ticketComments', ticket.id] });
+      queryClient.invalidateQueries({ queryKey: ['ticketHistory', ticket.id] });
+    },
+    onError: (error) => {
+      console.error('Error adding comment:', error);
+      toast.error('Error al añadir comentario');
+    }
+  });
+  
+  // Mutation for updating status
+  const updateStatusMutation = useMutation({
+    mutationFn: async (status: TicketStatus) => {
+      if (!user) throw new Error('Usuario no autenticado');
+      
+      // Update ticket status
+      const { error: updateError } = await supabase
+        .from('tickets')
+        .update({ 
+          status, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', ticket.id);
+
+      if (updateError) throw updateError;
+      
+      // Add history entry
+      const { error: historyError } = await supabase
+        .from('ticket_history')
+        .insert({
+          ticket_id: ticket.id,
+          user_id: user.id,
+          action: `Estado cambiado a "${translateStatus(status)}"`
+        });
+        
+      if (historyError) throw historyError;
+    },
+    onSuccess: (_, status) => {
+      toast.success(`Estado actualizado a: ${translateStatus(status)}`);
+      // Refresh ticket data and history
+      queryClient.invalidateQueries({ queryKey: ['technicianTickets'] });
+      queryClient.invalidateQueries({ queryKey: ['assignedTickets'] });
+      queryClient.invalidateQueries({ queryKey: ['ticketHistory', ticket.id] });
+    },
+    onError: (error) => {
+      console.error('Error updating status:', error);
+      toast.error('Error al actualizar el estado');
+    }
+  });
+  
+  // Mutation for updating priority
+  const updatePriorityMutation = useMutation({
+    mutationFn: async (priority: TicketPriority) => {
+      if (!user) throw new Error('Usuario no autenticado');
+      
+      // Update ticket priority
+      const { error: updateError } = await supabase
+        .from('tickets')
+        .update({ 
+          priority, 
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', ticket.id);
+        
+      if (updateError) throw updateError;
+      
+      // Add history entry
+      const { error: historyError } = await supabase
+        .from('ticket_history')
+        .insert({
+          ticket_id: ticket.id,
+          user_id: user.id,
+          action: `Prioridad cambiada a "${translatePriority(priority)}"`
+        });
+        
+      if (historyError) throw historyError;
+    },
+    onSuccess: (_, priority) => {
+      toast.success(`Prioridad actualizada a: ${translatePriority(priority)}`);
+      // Refresh ticket data and history
+      queryClient.invalidateQueries({ queryKey: ['technicianTickets'] });
+      queryClient.invalidateQueries({ queryKey: ['assignedTickets'] });
+      queryClient.invalidateQueries({ queryKey: ['ticketHistory', ticket.id] });
+    },
+    onError: (error) => {
+      console.error('Error updating priority:', error);
+      toast.error('Error al actualizar la prioridad');
+    }
+  });
+
   const handleAddComment = () => {
     if (!newComment.trim()) {
       toast.error('Por favor, ingrese un comentario');
       return;
     }
     
-    // In a real app, this would make an API call
-    toast.success('Comentario añadido correctamente');
-    setNewComment('');
+    addCommentMutation.mutate();
   };
   
   const handleStatusChange = (status: string) => {
-    // In a real app, this would make an API call
-    toast.success(`Estado actualizado a: ${translateStatus(status as TicketStatus)}`);
     setSelectedStatus(status as TicketStatus);
+    updateStatusMutation.mutate(status as TicketStatus);
   };
   
   const handlePriorityChange = (priority: string) => {
-    // In a real app, this would make an API call
-    toast.success(`Prioridad actualizada a: ${translatePriority(priority as TicketPriority)}`);
     setSelectedPriority(priority as TicketPriority);
+    updatePriorityMutation.mutate(priority as TicketPriority);
   };
 
   // Render file icon based on mimetype
@@ -198,7 +303,7 @@ export const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
       <DrawerContent className="max-h-[90%]">
         <DrawerHeader>
           <DrawerTitle className="flex items-center gap-2">
-            <span>{ticket.id}</span>
+            <span>{ticket.ticket_number}</span>
             {selectedStatus && (
               <Badge className={
                 selectedStatus === 'nuevo' ? 'bg-purple-500 text-white' :
@@ -249,7 +354,7 @@ export const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
                 <CardTitle className="text-sm font-medium text-muted-foreground">Fecha de Creación</CardTitle>
               </CardHeader>
               <CardContent>
-                <p>{new Date(ticket.createdAt).toLocaleString('es-ES')}</p>
+                <p>{new Date(ticket.created_at).toLocaleString('es-ES')}</p>
               </CardContent>
             </Card>
             
@@ -262,11 +367,7 @@ export const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
               </CardHeader>
               <CardContent>
                 <p className={ticket.priority === 'crítica' || ticket.priority === 'alta' ? 'text-red-500 font-medium' : ''}>
-                  {/* This would be calculated dynamically in a real app */}
-                  {ticket.priority === 'crítica' ? '4 horas' : 
-                   ticket.priority === 'alta' ? '8 horas' : 
-                   ticket.priority === 'media' ? '24 horas' : 
-                   '48 horas'}
+                  {ticket.due_date ? new Date(ticket.due_date).toLocaleString('es-ES') : 'No definido'}
                 </p>
               </CardContent>
             </Card>
@@ -291,40 +392,64 @@ export const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
             
             {/* Comments Tab */}
             <TabsContent value="comments" className="space-y-4">
-              {mockComments.map((comment) => (
-                <Card key={comment.id}>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Técnico</CardTitle>
-                    <CardDescription className="text-xs">
-                      {new Date(comment.createdAt).toLocaleString('es-ES')}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p>{comment.content}</p>
+              {isLoadingComments ? (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                </div>
+              ) : comments.length === 0 ? (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <MessageSquare className="h-12 w-12 mb-2" />
+                    <p>No hay comentarios aún</p>
                   </CardContent>
                 </Card>
-              ))}
+              ) : (
+                comments.map((comment: Comment) => (
+                  <Card key={comment.id}>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Técnico</CardTitle>
+                      <CardDescription className="text-xs">
+                        {new Date(comment.created_at).toLocaleString('es-ES')}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <p>{comment.content}</p>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
             </TabsContent>
             
             {/* History Tab */}
             <TabsContent value="history">
               <Card>
                 <CardContent className="pt-6">
-                  <ul className="space-y-4">
-                    {mockHistory.map((item) => (
-                      <li key={item.id} className="flex items-start gap-3">
-                        <div className="rounded-full bg-[#E5DEFF] p-1">
-                          <ListCheck className="h-4 w-4 text-[#6E59A5]" />
-                        </div>
-                        <div>
-                          <p className="font-medium">{item.action}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(item.createdAt).toLocaleString('es-ES')}
-                          </p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  {isLoadingHistory ? (
+                    <div className="flex justify-center items-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : history.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                      <ListCheck className="h-12 w-12 mb-2" />
+                      <p>No hay historial disponible</p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-4">
+                      {history.map((item: TicketHistory) => (
+                        <li key={item.id} className="flex items-start gap-3">
+                          <div className="rounded-full bg-[#E5DEFF] p-1">
+                            <ListCheck className="h-4 w-4 text-[#6E59A5]" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{item.action}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(item.created_at).toLocaleString('es-ES')}
+                            </p>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -333,22 +458,33 @@ export const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
             <TabsContent value="attachments">
               <Card>
                 <CardContent className="pt-6">
-                  <ul className="space-y-2">
-                    {mockAttachments.map((attachment) => (
-                      <li key={attachment.id} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {getFileIcon(attachment.mimeType)}
-                          <span>{attachment.filename}</span>
-                          <span className="text-sm text-muted-foreground">
-                            ({formatFileSize(attachment.size)})
-                          </span>
-                        </div>
-                        <Button variant="ghost" size="sm">
-                          Descargar
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
+                  {isLoadingAttachments ? (
+                    <div className="flex justify-center items-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                    </div>
+                  ) : attachments.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                      <FileText className="h-12 w-12 mb-2" />
+                      <p>No hay archivos adjuntos</p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-2">
+                      {attachments.map((attachment: Attachment) => (
+                        <li key={attachment.id} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getFileIcon(attachment.mime_type)}
+                            <span>{attachment.filename}</span>
+                            <span className="text-sm text-muted-foreground">
+                              ({formatFileSize(attachment.size)})
+                            </span>
+                          </div>
+                          <Button variant="ghost" size="sm">
+                            Descargar
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -408,9 +544,21 @@ export const TicketDetailDrawer: React.FC<TicketDetailDrawerProps> = ({
         </div>
         
         <DrawerFooter>
-          <Button onClick={handleAddComment} disabled={!newComment.trim()}>
-            <MessageSquare className="mr-2 h-4 w-4" />
-            Añadir Comentario
+          <Button 
+            onClick={handleAddComment} 
+            disabled={!newComment.trim() || addCommentMutation.isPending}
+          >
+            {addCommentMutation.isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Añadiendo...
+              </>
+            ) : (
+              <>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Añadir Comentario
+              </>
+            )}
           </Button>
           <DrawerClose asChild>
             <Button variant="outline">Cerrar</Button>
