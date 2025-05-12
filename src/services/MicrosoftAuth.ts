@@ -56,7 +56,7 @@ export const initMSAL = async () => {
 export const loginWithMicrosoft = async () => {
   try {
     const msalInstance = await initMSAL();
-    const loginResponse = await msalInstance.loginPopup(loginRequest);
+    const loginResponse = await msalInstance.loginPopup();
     
     // Aquí procesaríamos los datos del usuario y generaríamos una sesión
     const userData = {

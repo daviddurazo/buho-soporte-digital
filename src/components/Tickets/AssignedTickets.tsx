@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,16 +43,16 @@ import {
 import { TicketDetailDrawer } from './TicketDetailDrawer';
 import { Ticket, TicketPriority, TicketStatus } from '@/types';
 
-// Mock data for tickets
-const mockAssignedTickets: Ticket[] = [
+// Updated mock data for tickets with proper types
+const mockAssignedTickets: Array<Ticket & { dueDate: string }> = [
   {
     id: 'TK-1001',
     title: 'Problema con la impresora',
     description: 'La impresora del departamento de ingeniería no está funcionando correctamente.',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    status: 'in_progress',
-    priority: 'high',
+    status: 'en_progreso',
+    priority: 'alta',
     category: 'hardware',
     userId: 'user123',
     assignedToId: 'tech001',
@@ -66,8 +65,8 @@ const mockAssignedTickets: Ticket[] = [
     description: 'Necesitamos actualizar el software en los laboratorios.',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
-    status: 'open',
-    priority: 'medium',
+    status: 'nuevo',
+    priority: 'media',
     category: 'software',
     userId: 'user456',
     assignedToId: 'tech001',
@@ -80,8 +79,8 @@ const mockAssignedTickets: Ticket[] = [
     description: 'Los estudiantes no pueden conectarse a la red WiFi en el aula 105.',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    status: 'pending',
-    priority: 'high',
+    status: 'asignado',
+    priority: 'alta',
     category: 'network',
     userId: 'user789',
     assignedToId: 'tech001',
@@ -94,8 +93,8 @@ const mockAssignedTickets: Ticket[] = [
     description: 'No puedo acceder al sistema académico con mis credenciales.',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
     updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 1).toISOString(),
-    status: 'open',
-    priority: 'low',
+    status: 'nuevo',
+    priority: 'baja',
     category: 'access',
     userId: 'user101',
     assignedToId: 'tech001',
@@ -107,9 +106,9 @@ const mockAssignedTickets: Ticket[] = [
     title: 'Proyector no funciona en salón 303',
     description: 'El proyector del salón 303 no está encendiendo.',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
-    status: 'in_progress',
-    priority: 'medium',
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 30).toISOString(),
+    status: 'en_progreso',
+    priority: 'media',
     category: 'hardware',
     userId: 'user202',
     assignedToId: 'tech001',
@@ -120,12 +119,14 @@ const mockAssignedTickets: Ticket[] = [
 
 const getPriorityBadge = (priority: TicketPriority) => {
   switch (priority) {
-    case 'high':
+    case 'alta':
       return <Badge variant="destructive">Alta</Badge>;
-    case 'medium':
+    case 'media':
       return <Badge variant="default" className="bg-yellow-500">Media</Badge>;
-    case 'low':
+    case 'baja':
       return <Badge variant="outline" className="text-gray-500">Baja</Badge>;
+    case 'crítica':
+      return <Badge variant="destructive" className="bg-red-600">Crítica</Badge>;
     default:
       return <Badge variant="outline">N/A</Badge>;
   }
@@ -133,15 +134,15 @@ const getPriorityBadge = (priority: TicketPriority) => {
 
 const getStatusBadge = (status: TicketStatus) => {
   switch (status) {
-    case 'open':
+    case 'nuevo':
       return <Badge variant="secondary">Abierto</Badge>;
-    case 'in_progress':
+    case 'en_progreso':
       return <Badge className="bg-blue-500">En Progreso</Badge>;
-    case 'pending':
+    case 'asignado':
       return <Badge className="bg-yellow-500">Pendiente</Badge>;
-    case 'resolved':
+    case 'resuelto':
       return <Badge className="bg-green-500">Resuelto</Badge>;
-    case 'closed':
+    case 'cerrado':
       return <Badge variant="outline">Cerrado</Badge>;
     default:
       return <Badge variant="outline">N/A</Badge>;
@@ -204,7 +205,7 @@ export const AssignedTickets: React.FC = () => {
   const [priorityFilter, setPriorityFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [selectedTicket, setSelectedTicket] = useState<Ticket & { dueDate: string } | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Filter tickets based on search query and filters
@@ -232,7 +233,7 @@ export const AssignedTickets: React.FC = () => {
     }
   };
 
-  const handleViewTicket = (ticket: Ticket) => {
+  const handleViewTicket = (ticket: typeof mockAssignedTickets[0]) => {
     setSelectedTicket(ticket);
     setDrawerOpen(true);
   };
@@ -290,9 +291,10 @@ export const AssignedTickets: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todas</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="medium">Media</SelectItem>
-                  <SelectItem value="low">Baja</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="media">Media</SelectItem>
+                  <SelectItem value="baja">Baja</SelectItem>
+                  <SelectItem value="crítica">Crítica</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -459,7 +461,7 @@ export const AssignedTickets: React.FC = () => {
       {/* Ticket Detail Drawer */}
       {selectedTicket && (
         <TicketDetailDrawer
-          open={drawerOpen}
+          isOpen={drawerOpen}
           onClose={() => setDrawerOpen(false)}
           ticket={selectedTicket}
         />

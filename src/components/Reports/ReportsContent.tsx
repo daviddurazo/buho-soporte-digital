@@ -8,7 +8,7 @@ import { PieChartView } from '@/components/Reports/PieChartView';
 import { TicketTable } from '@/components/Reports/TicketTable';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { CalendarRange, BarChart, LineChart, PieChart, Download, FileText, FileCsv } from 'lucide-react';
+import { CalendarRange, BarChart, LineChart, PieChart, Download, FileText, Files } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DateRange } from 'react-day-picker';
 import { exportToCSV, exportToPDF } from '@/utils/exportUtils';
@@ -79,7 +79,7 @@ export const ReportsContent: React.FC = () => {
         <h1 className="text-3xl font-bold tracking-tight">Reportes</h1>
         <div className="flex gap-2">
           <Button onClick={handleExportCSV} disabled={isLoading} variant="outline">
-            <FileCsv className="mr-2 h-4 w-4" />
+            <Files className="mr-2 h-4 w-4" />
             Exportar CSV
           </Button>
           <Button onClick={handleExportPDF} disabled={isLoading} variant="outline">

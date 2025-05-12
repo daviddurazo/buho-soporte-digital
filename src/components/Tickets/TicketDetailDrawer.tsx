@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Drawer,
@@ -54,7 +55,7 @@ import {
 } from 'lucide-react';
 
 interface TicketDetailDrawerProps {
-  ticket: Ticket | null;
+  ticket: Ticket & { dueDate: string };
   isOpen: boolean;
   onClose: () => void;
 }

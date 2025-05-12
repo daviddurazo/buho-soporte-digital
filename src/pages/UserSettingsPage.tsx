@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import AppLayout from '@/components/AppLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -10,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { PaintBrushIcon, BellIcon, LanguagesIcon, EyeIcon, MoonIcon, SunIcon } from 'lucide-react';
+import { PaintbrushIcon, BellIcon, Languages, Eye, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 
 const UserSettingsPage: React.FC = () => {
@@ -43,7 +42,7 @@ const UserSettingsPage: React.FC = () => {
     return <Navigate to="/auth" />;
   }
   
-  const handleToggleSettings = (key: string, nestedKey?: string) => {
+  const handleToggleSettings = (key: keyof typeof settings, nestedKey?: string) => {
     if (nestedKey) {
       setSettings(prev => ({
         ...prev,
@@ -53,9 +52,10 @@ const UserSettingsPage: React.FC = () => {
         }
       }));
     } else {
+      // @ts-ignore - Dynamic handling for boolean properties
       setSettings(prev => ({
         ...prev,
-        [key]: !prev[key as keyof typeof prev]
+        [key]: !prev[key]
       }));
       
       // Manejar cambio de tema
@@ -65,7 +65,7 @@ const UserSettingsPage: React.FC = () => {
     }
   };
   
-  const handleSelectChange = (key: string, value: string) => {
+  const handleSelectChange = (key: keyof typeof settings, value: string) => {
     setSettings(prev => ({
       ...prev,
       [key]: value
@@ -84,7 +84,7 @@ const UserSettingsPage: React.FC = () => {
         <Tabs defaultValue="appearance">
           <TabsList className="mb-4">
             <TabsTrigger value="appearance">
-              <PaintBrushIcon className="mr-2 h-4 w-4" />
+              <PaintbrushIcon className="mr-2 h-4 w-4" />
               Apariencia
             </TabsTrigger>
             <TabsTrigger value="notifications">
@@ -92,11 +92,11 @@ const UserSettingsPage: React.FC = () => {
               Notificaciones
             </TabsTrigger>
             <TabsTrigger value="language">
-              <LanguagesIcon className="mr-2 h-4 w-4" />
+              <Languages className="mr-2 h-4 w-4" />
               Idioma y Región
             </TabsTrigger>
             <TabsTrigger value="accessibility">
-              <EyeIcon className="mr-2 h-4 w-4" />
+              <Eye className="mr-2 h-4 w-4" />
               Accesibilidad
             </TabsTrigger>
           </TabsList>
@@ -114,12 +114,12 @@ const UserSettingsPage: React.FC = () => {
                     <p className="text-sm text-muted-foreground">Cambia entre tema claro y oscuro</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <SunIcon className="h-4 w-4" />
+                    <Sun className="h-4 w-4" />
                     <Switch 
                       checked={settings.darkMode} 
                       onCheckedChange={() => handleToggleSettings('darkMode')}
                     />
-                    <MoonIcon className="h-4 w-4" />
+                    <Moon className="h-4 w-4" />
                   </div>
                 </div>
                 

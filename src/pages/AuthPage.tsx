@@ -28,22 +28,44 @@ const AuthPage: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-unison-blue to-blue-900 p-4">
       <div className="w-full max-w-md">
         {mode === 'login' && (
-          <LoginForm 
-            onSwitchToRegister={() => setMode('register')}
-            onSwitchToForgotPassword={() => setMode('forgot-password')}
-          />
+          <LoginForm />
         )}
         
         {mode === 'register' && (
-          <RegisterForm 
-            onSwitchToLogin={() => setMode('login')}
-          />
+          <RegisterForm />
         )}
         
         {mode === 'forgot-password' && (
-          <ForgotPasswordForm 
-            onSwitchToLogin={() => setMode('login')}
-          />
+          <ForgotPasswordForm />
+        )}
+        
+        {mode === 'login' && (
+          <div className="mt-4 text-center space-y-2">
+            <button 
+              className="text-white hover:underline text-sm" 
+              onClick={() => setMode('register')}
+            >
+              ¿No tienes una cuenta? Regístrate
+            </button>
+            <br />
+            <button 
+              className="text-white hover:underline text-sm" 
+              onClick={() => setMode('forgot-password')}
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          </div>
+        )}
+        
+        {(mode === 'register' || mode === 'forgot-password') && (
+          <div className="mt-4 text-center">
+            <button 
+              className="text-white hover:underline text-sm" 
+              onClick={() => setMode('login')}
+            >
+              Volver al inicio de sesión
+            </button>
+          </div>
         )}
       </div>
     </div>

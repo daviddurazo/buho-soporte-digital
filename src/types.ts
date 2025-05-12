@@ -1,4 +1,3 @@
-
 // User related types
 export type UserRole = 'student' | 'professor' | 'technician' | 'admin';
 
@@ -26,7 +25,8 @@ export interface Ticket {
   createdAt: string;
   updatedAt: string;
   creatorId: string;
-  assigneeId?: string;
+  userId?: string;
+  assignedToId?: string;
 }
 
 export interface Comment {

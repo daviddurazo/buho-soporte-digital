@@ -1,5 +1,6 @@
 
 import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -50,8 +51,8 @@ export const exportToPDF = (data: any[], fileName: string, columns: string[]) =>
       tableRows.push(rowData);
     });
     
-    // Añadir tabla
-    doc.autoTable({
+    // Añadir tabla usando jspdf-autotable
+    (doc as any).autoTable({
       head: [tableColumn],
       body: tableRows,
       startY: 40,
