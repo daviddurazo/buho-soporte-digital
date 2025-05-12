@@ -61,13 +61,19 @@ const UserSettingsPage: React.FC = () => {
   
   const handleToggleSettings = (key: keyof UserSettings, nestedKey?: string) => {
     if (nestedKey) {
-      setSettings(prev => ({
-        ...prev,
-        [key]: {
-          ...prev[key] as Record<string, unknown>,
-          [nestedKey]: !((prev[key] as Record<string, boolean>)[nestedKey])
+      setSettings(prev => {
+        // Type-safe way to handle nested notification settings
+        if (key === 'notifications') {
+          return {
+            ...prev,
+            notifications: {
+              ...prev.notifications,
+              [nestedKey]: !prev.notifications[nestedKey as keyof NotificationSettings]
+            }
+          };
         }
-      }));
+        return prev;
+      });
     } else if (typeof settings[key] === 'boolean') {
       setSettings(prev => ({
         ...prev,

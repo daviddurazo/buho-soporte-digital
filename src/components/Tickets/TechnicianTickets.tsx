@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,7 +23,7 @@ import {
 } from 'lucide-react';
 
 // Mock data for tickets - updated with proper field name assignedToId instead of assigneeId
-const mockTickets: (Ticket & { dueDate?: string })[] = [
+const mockTickets: Ticket[] = [
   {
     id: 'TK-1001',
     title: 'No puedo acceder a mi cuenta de correo institucional',
@@ -175,15 +174,13 @@ export const TechnicianTickets: React.FC = () => {
   });
   
   // Handle row click to open drawer
-  const handleRowClick = (ticket: Ticket & { dueDate?: string }) => {
-    // Make sure ticket has dueDate before passing to drawer
-    if (!ticket.dueDate) {
-      ticket = {
-        ...ticket,
-        dueDate: new Date().toISOString() // Default dueDate if missing
-      };
-    }
-    setSelectedTicket(ticket as Ticket & { dueDate: string });
+  const handleRowClick = (ticket: Ticket) => {
+    // Ensure ticket has dueDate property
+    const ticketWithDueDate = {
+      ...ticket,
+      dueDate: ticket.dueDate || new Date().toISOString() // Use existing dueDate or set default
+    };
+    setSelectedTicket(ticketWithDueDate);
     setIsDrawerOpen(true);
   };
   
@@ -243,7 +240,7 @@ export const TechnicianTickets: React.FC = () => {
     return (
       <div className="flex items-center gap-2">
         <Flag 
-          className={`h-4 w-4 ${priority === 'crítica' || priority === 'alta' ? 'text-white' : ''}`} 
+          className={`h-4 w-4 ${priority === 'crítica' ? 'text-white' : ''}`} 
           style={{
             color: priority === 'crítica' ? 'white' : 
                    priority === 'alta' ? 'white' :

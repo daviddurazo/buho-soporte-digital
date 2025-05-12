@@ -27,6 +27,7 @@ export interface Ticket {
   creatorId: string;
   userId?: string;
   assignedToId?: string;
+  dueDate?: string; // Added dueDate as optional property
 }
 
 export interface Comment {

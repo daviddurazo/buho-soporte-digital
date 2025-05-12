@@ -8,6 +8,20 @@ import { Navigate } from 'react-router-dom';
 
 type AuthMode = 'login' | 'register' | 'forgot-password';
 
+// Define interfaces for component props to ensure type safety
+interface LoginFormProps {
+  onSwitchToRegister: () => void;
+  onSwitchToForgotPassword: () => void;
+}
+
+interface RegisterFormProps {
+  onSwitchToLogin: () => void;
+}
+
+interface ForgotPasswordFormProps {
+  onSwitchToLogin: () => void;
+}
+
 const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<AuthMode>('login');
   const { isAuthenticated, isLoading } = useAuth();
