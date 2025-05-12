@@ -3,9 +3,9 @@ import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { User, Bell, Menu, X } from 'lucide-react';
+import { User, Bell, BellOff, Menu, X } from 'lucide-react';
 import { UnisonLogo } from './UnisonLogo';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,11 +21,21 @@ interface AppLayoutProps {
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
   
   const handleLogout = () => {
     logout();
     toast.success("Sesión cerrada exitosamente");
+  };
+
+  const toggleNotifications = () => {
+    setNotificationsEnabled(!notificationsEnabled);
+    toast.success(notificationsEnabled 
+      ? "Notificaciones desactivadas" 
+      : "Notificaciones activadas"
+    );
   };
 
   const getNavLinksByRole = () => {
@@ -95,8 +105,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               size="icon" 
               className="text-white hover:bg-blue-800"
               aria-label="Notifications"
+              onClick={toggleNotifications}
             >
-              <Bell className="h-5 w-5" />
+              {notificationsEnabled ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
             </Button>
             
             <DropdownMenu>
@@ -118,11 +129,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/profile')}>
                   Mi Perfil
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer" asChild>
-                  <Link to="/config">Configuraciones</Link>
+                <DropdownMenuItem className="cursor-pointer" onClick={() => navigate('/settings')}>
+                  Configuraciones
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-pointer" onClick={handleLogout}>
@@ -134,9 +145,17 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
       </header>
       
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
       {/* Mobile sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 
+        fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:hidden
       `}>
@@ -189,7 +208,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           </div>
         </nav>
         
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 p-4 md:p-6 overflow-auto">
           {children}
         </main>
       </div>

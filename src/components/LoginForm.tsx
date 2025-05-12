@@ -1,134 +1,207 @@
 
-import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { UnisonLogo } from './UnisonLogo';
+import { Link } from 'react-router-dom';
+import { LogIn, Mail } from 'lucide-react';
+import { loginWithMicrosoft } from '@/services/MicrosoftAuth';
 
-interface LoginFormProps {
-  onSwitchToRegister: () => void;
-  onSwitchToForgotPassword: () => void;
-}
+// Schema para validación
+const loginSchema = z.object({
+  email: z.string()
+    .email('Correo electrónico inválido')
+    .refine(val => val.endsWith('@unison.mx'), {
+      message: 'El correo electrónico debe ser de dominio @unison.mx',
+    }),
+  password: z.string()
+    .min(6, 'La contraseña debe tener al menos 6 caracteres'),
+});
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onSwitchToForgotPassword }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+export type LoginFormData = z.infer<typeof loginSchema>;
+
+export function LoginForm() {
   const { login } = useAuth();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!email.endsWith('@unison.mx')) {
-      toast.error("El correo electrónico debe ser de dominio @unison.mx");
-      return;
-    }
-    
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isMicrosoftLoading, setIsMicrosoftLoading] = useState(false);
+  
+  // Configurar react-hook-form
+  const form = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+  
+  // Función para manejar el envío del formulario
+  const onSubmit = async (values: LoginFormData) => {
     setIsLoading(true);
-    
     try {
-      await login(email, password);
-      toast.success("Inicio de sesión exitoso");
+      await login(values.email, values.password);
+      toast.success('Inicio de sesión exitoso');
+      navigate('/dashboard');
     } catch (error) {
-      console.error("Error during login:", error);
-      toast.error("Error al iniciar sesión: " + (error instanceof Error ? error.message : "Error desconocido"));
+      console.error('Error en inicio de sesión:', error);
+      if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Error al iniciar sesión');
+      }
     } finally {
       setIsLoading(false);
     }
   };
-
+  
+  // Función para manejar inicio de sesión con Microsoft
+  const handleMicrosoftLogin = async () => {
+    setIsMicrosoftLoading(true);
+    try {
+      const userData = await loginWithMicrosoft();
+      toast.success('Inicio de sesión con Microsoft exitoso');
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error en inicio de sesión con Microsoft:', error);
+    } finally {
+      setIsMicrosoftLoading(false);
+    }
+  };
+  
   return (
-    <Card className="w-full max-w-md shadow-lg animate-fade-in">
-      <CardHeader className="space-y-2 items-center text-center">
-        <UnisonLogo size="lg" />
-        <CardTitle className="text-2xl font-bold">Iniciar Sesión</CardTitle>
-        <CardDescription>
-          Ingrese con su cuenta institucional para acceder al sistema de soporte
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Correo Electrónico</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="nombre@unison.mx"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              disabled={isLoading}
-              aria-label="Correo Electrónico"
-            />
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Contraseña</Label>
-              <button 
-                type="button" 
-                onClick={onSwitchToForgotPassword}
-                className="text-sm text-unison-blue hover:underline"
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
-            </div>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
-              aria-label="Contraseña"
-            />
-          </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">Iniciar sesión</h1>
+        <p className="text-sm text-muted-foreground">
+          Ingresa tus credenciales para acceder al sistema
+        </p>
+      </div>
+      
+      {/* Botón de inicio de sesión con Microsoft */}
+      <div>
+        <Button
+          variant="outline"
+          type="button"
+          disabled={isLoading || isMicrosoftLoading}
+          className="w-full flex items-center justify-center gap-2"
+          onClick={handleMicrosoftLogin}
+        >
+          {isMicrosoftLoading ? (
+            <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 23 23">
+                <path fill="#f3f3f3" d="M0 0h23v23H0z"></path>
+                <path fill="#f35325" d="M1 1h10v10H1z"></path>
+                <path fill="#81bc06" d="M12 1h10v10H12z"></path>
+                <path fill="#05a6f0" d="M1 12h10v10H1z"></path>
+                <path fill="#ffba08" d="M12 12h10v10H12z"></path>
+              </svg>
+              <span>Iniciar sesión con Microsoft</span>
+            </>
+          )}
+        </Button>
+      </div>
+      
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t"></span>
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">
+            O continúa con
+          </span>
+        </div>
+      </div>
+      
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Correo electrónico</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="correo@unison.mx"
+                    autoComplete="email"
+                    disabled={isLoading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Contraseña</FormLabel>
+                  <Link 
+                    to="/auth?mode=forgot-password"
+                    className="text-sm text-primary hover:underline"
+                  >
+                    ¿Olvidaste tu contraseña?
+                  </Link>
+                </div>
+                <FormControl>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    disabled={isLoading}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
           <Button 
             type="submit" 
-            className="w-full bg-unison-blue hover:bg-blue-700" 
-            disabled={isLoading}
+            className="w-full" 
+            disabled={isLoading || isMicrosoftLoading}
           >
-            {isLoading ? "Procesando..." : "Iniciar Sesión"}
-          </Button>
-          
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                O iniciar con
-              </span>
-            </div>
-          </div>
-          
-          <Button 
-            type="button" 
-            variant="outline" 
-            className="w-full"
-            disabled={isLoading}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="mr-2" viewBox="0 0 16 16">
-              <path d="M16 8c0-4.42-3.58-8-8-8S0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8z"/>
-            </svg>
-            Iniciar con Microsoft
+            {isLoading ? (
+              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full"></div>
+            ) : (
+              <>
+                <LogIn className="mr-2 h-4 w-4" />
+                Iniciar sesión
+              </>
+            )}
           </Button>
         </form>
-      </CardContent>
-      <CardFooter className="flex justify-center">
-        <p className="text-sm text-center text-muted-foreground">
-          ¿No tienes una cuenta?{" "}
-          <button 
-            type="button" 
-            onClick={onSwitchToRegister}
-            className="text-unison-blue hover:underline font-medium"
-          >
-            Crear cuenta
-          </button>
-        </p>
-      </CardFooter>
-    </Card>
+      </Form>
+      
+      <div className="text-center text-sm">
+        ¿No tienes una cuenta?{" "}
+        <Link 
+          to="/auth?mode=register" 
+          className="font-medium text-primary hover:underline"
+        >
+          Regístrate
+        </Link>
+      </div>
+    </div>
   );
-};
+}

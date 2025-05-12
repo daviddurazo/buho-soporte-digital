@@ -1,412 +1,469 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Search, Filter, MoreHorizontal } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
+import { 
+  Search, 
+  Filter, 
+  MoreHorizontal, 
+  Clock,
+  Tag,
+  AlertCircle,
+  CheckCircle,
+  RotateCw
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { TicketDetailDrawer } from './TicketDetailDrawer';
+import { Ticket, TicketPriority, TicketStatus } from '@/types';
 
-type Ticket = {
-  id: string;
-  title: string;
-  category: string;
-  priority: 'baja' | 'media' | 'alta' | 'crítica';
-  status: 'nuevo' | 'asignado' | 'en_progreso' | 'resuelto';
-  slaRemaining: string;
-  createdAt: string;
-  creator: string;
-  description: string;
+// Mock data for tickets
+const mockAssignedTickets: Ticket[] = [
+  {
+    id: 'TK-1001',
+    title: 'Problema con la impresora',
+    description: 'La impresora del departamento de ingeniería no está funcionando correctamente.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), // 2 days ago
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+    status: 'in_progress',
+    priority: 'high',
+    category: 'hardware',
+    userId: 'user123',
+    assignedToId: 'tech001',
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 12).toISOString(),
+    creatorId: 'user123'
+  },
+  {
+    id: 'TK-1002',
+    title: 'Actualización de software necesaria',
+    description: 'Necesitamos actualizar el software en los laboratorios.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(), // 2 days ago
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
+    status: 'open',
+    priority: 'medium',
+    category: 'software',
+    userId: 'user456',
+    assignedToId: 'tech001',
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString(),
+    creatorId: 'user456'
+  },
+  {
+    id: 'TK-1003',
+    title: 'Problema de red en aula 105',
+    description: 'Los estudiantes no pueden conectarse a la red WiFi en el aula 105.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
+    status: 'pending',
+    priority: 'high',
+    category: 'network',
+    userId: 'user789',
+    assignedToId: 'tech001',
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(),
+    creatorId: 'user789'
+  },
+  {
+    id: 'TK-1004',
+    title: 'Acceso al sistema académico',
+    description: 'No puedo acceder al sistema académico con mis credenciales.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 1).toISOString(),
+    status: 'open',
+    priority: 'low',
+    category: 'access',
+    userId: 'user101',
+    assignedToId: 'tech001',
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 48).toISOString(),
+    creatorId: 'user101'
+  },
+  {
+    id: 'TK-1005',
+    title: 'Proyector no funciona en salón 303',
+    description: 'El proyector del salón 303 no está encendiendo.',
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
+    updatedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
+    status: 'in_progress',
+    priority: 'medium',
+    category: 'hardware',
+    userId: 'user202',
+    assignedToId: 'tech001',
+    dueDate: new Date(Date.now() + 1000 * 60 * 60 * 2).toISOString(),
+    creatorId: 'user202'
+  }
+];
+
+const getPriorityBadge = (priority: TicketPriority) => {
+  switch (priority) {
+    case 'high':
+      return <Badge variant="destructive">Alta</Badge>;
+    case 'medium':
+      return <Badge variant="default" className="bg-yellow-500">Media</Badge>;
+    case 'low':
+      return <Badge variant="outline" className="text-gray-500">Baja</Badge>;
+    default:
+      return <Badge variant="outline">N/A</Badge>;
+  }
+};
+
+const getStatusBadge = (status: TicketStatus) => {
+  switch (status) {
+    case 'open':
+      return <Badge variant="secondary">Abierto</Badge>;
+    case 'in_progress':
+      return <Badge className="bg-blue-500">En Progreso</Badge>;
+    case 'pending':
+      return <Badge className="bg-yellow-500">Pendiente</Badge>;
+    case 'resolved':
+      return <Badge className="bg-green-500">Resuelto</Badge>;
+    case 'closed':
+      return <Badge variant="outline">Cerrado</Badge>;
+    default:
+      return <Badge variant="outline">N/A</Badge>;
+  }
+};
+
+const getSLARemaining = (dueDate: string) => {
+  const due = new Date(dueDate);
+  const now = new Date();
+  const remaining = due.getTime() - now.getTime();
+  
+  if (remaining < 0) {
+    return (
+      <span className="text-red-500 flex items-center">
+        <AlertCircle className="h-4 w-4 mr-1" /> Vencido
+      </span>
+    );
+  }
+  
+  if (remaining < 1000 * 60 * 60 * 4) { // less than 4 hours
+    return (
+      <span className="text-red-500 flex items-center">
+        <Clock className="h-4 w-4 mr-1" /> {formatDistanceToNow(due, { locale: es, addSuffix: true })}
+      </span>
+    );
+  }
+  
+  if (remaining < 1000 * 60 * 60 * 24) { // less than 1 day
+    return (
+      <span className="text-yellow-500 flex items-center">
+        <Clock className="h-4 w-4 mr-1" /> {formatDistanceToNow(due, { locale: es, addSuffix: true })}
+      </span>
+    );
+  }
+  
+  return (
+    <span className="text-green-500 flex items-center">
+      <Clock className="h-4 w-4 mr-1" /> {formatDistanceToNow(due, { locale: es, addSuffix: true })}
+    </span>
+  );
+};
+
+const getCategoryLabel = (category: string) => {
+  switch (category) {
+    case 'hardware':
+      return 'Hardware';
+    case 'software':
+      return 'Software';
+    case 'network':
+      return 'Red';
+    case 'access':
+      return 'Acceso';
+    default:
+      return 'Otro';
+  }
 };
 
 export const AssignedTickets: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterPriority, setFilterPriority] = useState<string>('');
-  const [filterCategory, setFilterCategory] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [priorityFilter, setPriorityFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Datos de ejemplo
-  const tickets: Ticket[] = [
-    {
-      id: 'T-1001',
-      title: 'Falla en proyector del aula B-12',
-      category: 'Hardware',
-      priority: 'alta',
-      status: 'asignado',
-      slaRemaining: '3h 45m',
-      createdAt: '2023-06-03T08:30:00Z',
-      creator: 'Juan Pérez (Profesor)',
-      description: 'El proyector del aula B-12 no enciende. Ya revisé la conexión y el cable de alimentación parece estar bien.'
-    },
-    {
-      id: 'T-1003',
-      title: 'Error en carga de calificaciones',
-      category: 'Software',
-      priority: 'alta',
-      status: 'en_progreso',
-      slaRemaining: '2h 20m',
-      createdAt: '2023-06-02T14:20:00Z',
-      creator: 'Carlos Ruiz (Profesor)',
-      description: 'No puedo cargar las calificaciones en el sistema, aparece un error cuando intento guardar los cambios.'
-    },
-    {
-      id: 'T-1005',
-      title: 'Servidor de bases de datos lento',
-      category: 'Servidores',
-      priority: 'crítica',
-      status: 'en_progreso',
-      slaRemaining: '1h 10m',
-      createdAt: '2023-06-01T10:30:00Z',
-      creator: 'Admin Sistema',
-      description: 'El servidor de bases de datos está respondiendo muy lento, afectando a varios sistemas de la universidad.'
-    },
-    {
-      id: 'T-1008',
-      title: 'Problema con acceso al laboratorio',
-      category: 'Accesos',
-      priority: 'media',
-      status: 'asignado',
-      slaRemaining: '6h 30m',
-      createdAt: '2023-06-04T09:15:00Z',
-      creator: 'María López (Profesor)',
-      description: 'No puedo acceder al laboratorio de química con mi credencial, el lector no la reconoce.'
-    }
-  ];
-
-  // Filtrar tickets según los criterios de búsqueda y filtros
-  const filteredTickets = tickets.filter(ticket => {
-    const matchesSearch = searchTerm === '' || 
-      ticket.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      ticket.creator.toLowerCase().includes(searchTerm.toLowerCase());
-      
-    const matchesPriority = filterPriority === '' || ticket.priority === filterPriority;
-    const matchesCategory = filterCategory === '' || ticket.category.toLowerCase() === filterCategory.toLowerCase();
-    
+  // Filter tickets based on search query and filters
+  const filteredTickets = mockAssignedTickets.filter(ticket => {
+    const matchesSearch = ticket.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         ticket.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesPriority = priorityFilter === 'all' || ticket.priority === priorityFilter;
+    const matchesCategory = categoryFilter === 'all' || ticket.category === categoryFilter;
     return matchesSearch && matchesPriority && matchesCategory;
   });
-  
-  const handleSelectAll = () => {
+
+  const toggleSelectTicket = (ticketId: string) => {
+    setSelectedTickets(prev => 
+      prev.includes(ticketId) 
+        ? prev.filter(id => id !== ticketId)
+        : [...prev, ticketId]
+    );
+  };
+
+  const toggleSelectAll = () => {
     if (selectedTickets.length === filteredTickets.length) {
       setSelectedTickets([]);
     } else {
       setSelectedTickets(filteredTickets.map(t => t.id));
     }
   };
-  
-  const handleSelectTicket = (id: string) => {
-    if (selectedTickets.includes(id)) {
-      setSelectedTickets(selectedTickets.filter(ticketId => ticketId !== id));
-    } else {
-      setSelectedTickets([...selectedTickets, id]);
-    }
-  };
-  
-  const handleRowClick = (ticket: Ticket) => {
+
+  const handleViewTicket = (ticket: Ticket) => {
     setSelectedTicket(ticket);
-    setIsDetailOpen(true);
+    setDrawerOpen(true);
   };
-  
-  const handleBulkAction = (action: string) => {
-    if (selectedTickets.length === 0) {
-      toast.error("No hay tickets seleccionados");
-      return;
+
+  const handleTicketAction = (action: string, ticketId?: string) => {
+    const ticketsToAction = ticketId ? [ticketId] : selectedTickets;
+    
+    switch (action) {
+      case 'changeStatus':
+        toast.success(`Estado actualizado para ${ticketsToAction.length} ticket(s)`);
+        break;
+      case 'addNote':
+        toast.success('Nota añadida correctamente');
+        break;
+      case 'reassign':
+        toast.success(`${ticketsToAction.length} ticket(s) reasignado(s) correctamente`);
+        break;
+      case 'resolve':
+        toast.success(`${ticketsToAction.length} ticket(s) marcado(s) como resueltos`);
+        break;
+      default:
+        break;
     }
     
-    if (action === 'resolve') {
-      toast.success(`${selectedTickets.length} tickets marcados como resueltos`);
+    // Reset selected tickets after bulk action
+    if (!ticketId) {
       setSelectedTickets([]);
-    } else if (action === 'inProgress') {
-      toast.success(`${selectedTickets.length} tickets marcados como en progreso`);
-      setSelectedTickets([]);
-    } else if (action === 'reassign') {
-      toast.success(`${selectedTickets.length} tickets preparados para reasignación`);
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    switch(priority) {
-      case 'baja':
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800">Baja</Badge>;
-      case 'media':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Media</Badge>;
-      case 'alta':
-        return <Badge variant="outline" className="bg-orange-100 text-orange-800">Alta</Badge>;
-      case 'crítica':
-        return <Badge variant="outline" className="bg-red-100 text-red-800">Crítica</Badge>;
-      default:
-        return <Badge variant="outline">Desconocida</Badge>;
-    }
-  };
-  
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'nuevo':
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800">Nuevo</Badge>;
-      case 'asignado':
-        return <Badge variant="outline" className="bg-purple-100 text-purple-800">Asignado</Badge>;
-      case 'en_progreso':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800">En Progreso</Badge>;
-      case 'resuelto':
-        return <Badge variant="outline" className="bg-green-100 text-green-800">Resuelto</Badge>;
-      default:
-        return <Badge variant="outline">Desconocido</Badge>;
-    }
-  };
-  
   return (
-    <>
+    <div className="space-y-4">
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <CardTitle>Tickets Asignados</CardTitle>
-              <CardDescription>
-                Gestiona tus tickets asignados y su progreso
-              </CardDescription>
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-1 space-y-1">
+              <label htmlFor="search" className="text-sm font-medium">Buscar tickets</label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="search"
+                  placeholder="Buscar por ID o título..."
+                  className="pl-8"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
             </div>
             
-            <div className="flex flex-wrap gap-2">
-              {selectedTickets.length > 0 && (
-                <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleBulkAction('resolve')}
-                  >
-                    Resolver seleccionados
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleBulkAction('inProgress')}
-                  >
-                    Marcar en progreso
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    onClick={() => handleBulkAction('reassign')}
-                  >
-                    Reasignar
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-grow">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar tickets..."
-                className="pl-8 w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            
-            <div className="flex gap-2">
-              <Select value={filterPriority} onValueChange={setFilterPriority}>
-                <SelectTrigger className="w-[130px]">
-                  <div className="flex items-center">
-                    <Filter className="mr-2 h-4 w-4" />
-                    {filterPriority || "Prioridad"}
-                  </div>
+            <div className="w-full md:w-48 space-y-1">
+              <label htmlFor="priority-filter" className="text-sm font-medium">Prioridad</label>
+              <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                <SelectTrigger id="priority-filter">
+                  <SelectValue placeholder="Filtrar por prioridad" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
-                  <SelectItem value="baja">Baja</SelectItem>
-                  <SelectItem value="media">Media</SelectItem>
-                  <SelectItem value="alta">Alta</SelectItem>
-                  <SelectItem value="crítica">Crítica</SelectItem>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="high">Alta</SelectItem>
+                  <SelectItem value="medium">Media</SelectItem>
+                  <SelectItem value="low">Baja</SelectItem>
                 </SelectContent>
               </Select>
-              
-              <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="w-[130px]">
-                  <div className="flex items-center">
-                    <Filter className="mr-2 h-4 w-4" />
-                    {filterCategory || "Categoría"}
-                  </div>
+            </div>
+            
+            <div className="w-full md:w-48 space-y-1">
+              <label htmlFor="category-filter" className="text-sm font-medium">Categoría</label>
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                <SelectTrigger id="category-filter">
+                  <SelectValue placeholder="Filtrar por categoría" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todas</SelectItem>
+                  <SelectItem value="all">Todas</SelectItem>
                   <SelectItem value="hardware">Hardware</SelectItem>
                   <SelectItem value="software">Software</SelectItem>
-                  <SelectItem value="servidores">Servidores</SelectItem>
-                  <SelectItem value="redes">Redes</SelectItem>
-                  <SelectItem value="accesos">Accesos</SelectItem>
+                  <SelectItem value="network">Red</SelectItem>
+                  <SelectItem value="access">Acceso</SelectItem>
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          
-          <div className="border rounded-lg overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-12">
-                    <Checkbox 
-                      checked={selectedTickets.length === filteredTickets.length && filteredTickets.length > 0}
-                      onCheckedChange={handleSelectAll}
-                      aria-label="Select all"
-                    />
-                  </TableHead>
-                  <TableHead>ID</TableHead>
-                  <TableHead className="hidden md:table-cell">Título</TableHead>
-                  <TableHead className="hidden md:table-cell">Categoría</TableHead>
-                  <TableHead className="hidden lg:table-cell">Prioridad</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead className="hidden lg:table-cell">SLA Restante</TableHead>
-                  <TableHead className="hidden lg:table-cell">Creado</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTickets.length > 0 ? (
-                  filteredTickets.map((ticket) => (
-                    <TableRow 
-                      key={ticket.id}
-                      className="cursor-pointer hover:bg-gray-50"
-                      onClick={() => handleRowClick(ticket)}
-                    >
-                      <TableCell 
-                        className="w-12"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Checkbox 
-                          checked={selectedTickets.includes(ticket.id)}
-                          onCheckedChange={() => handleSelectTicket(ticket.id)}
-                          aria-label={`Select ticket ${ticket.id}`}
-                        />
-                      </TableCell>
-                      <TableCell className="font-medium">{ticket.id}</TableCell>
-                      <TableCell className="hidden md:table-cell">{ticket.title}</TableCell>
-                      <TableCell className="hidden md:table-cell">{ticket.category}</TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        {getPriorityBadge(ticket.priority)}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <span className={`
-                          ${ticket.slaRemaining.includes('1h') ? 'text-orange-500' : ''}
-                          ${ticket.slaRemaining.includes('h') && !ticket.slaRemaining.includes('1h') ? 'text-yellow-500' : ''}
-                        `}>{ticket.slaRemaining}</span>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        {new Date(ticket.createdAt).toLocaleDateString('es-MX')}
-                      </TableCell>
-                      <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                              <span className="sr-only">Abrir menú</span>
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>Ver detalles</DropdownMenuItem>
-                            <DropdownMenuItem>Cambiar estado</DropdownMenuItem>
-                            <DropdownMenuItem>Añadir nota</DropdownMenuItem>
-                            <DropdownMenuItem>Reasignar</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={8} className="text-center py-6 text-muted-foreground">
-                      No se encontraron tickets que coincidan con los criterios de búsqueda
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            
+            <Button variant="outline" className="md:self-end" onClick={() => {
+              setSearchQuery('');
+              setPriorityFilter('all');
+              setCategoryFilter('all');
+            }}>
+              Limpiar filtros
+            </Button>
           </div>
         </CardContent>
       </Card>
       
+      {/* Bulk Actions */}
+      {selectedTickets.length > 0 && (
+        <div className="bg-muted p-3 rounded-md flex justify-between items-center">
+          <div className="text-sm">
+            <span className="font-medium">{selectedTickets.length}</span> ticket(s) seleccionado(s)
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => handleTicketAction('changeStatus')}>
+              Cambiar Estado
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleTicketAction('reassign')}>
+              Reasignar
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => handleTicketAction('resolve')}>
+              Marcar como Resuelto
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setSelectedTickets([])}>
+              Cancelar
+            </Button>
+          </div>
+        </div>
+      )}
+      
+      {/* Tickets Table */}
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">
+                <Checkbox 
+                  checked={selectedTickets.length === filteredTickets.length && filteredTickets.length > 0}
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Seleccionar todos"
+                />
+              </TableHead>
+              <TableHead className="w-24">ID</TableHead>
+              <TableHead>Título</TableHead>
+              <TableHead className="hidden md:table-cell">Categoría</TableHead>
+              <TableHead className="hidden md:table-cell">Prioridad</TableHead>
+              <TableHead className="hidden md:table-cell">Estado</TableHead>
+              <TableHead className="hidden md:table-cell">SLA Restante</TableHead>
+              <TableHead className="hidden md:table-cell">Fecha de Creación</TableHead>
+              <TableHead className="text-right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTickets.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <Tag className="h-12 w-12 mb-2" />
+                    <p className="text-lg font-medium">No hay tickets asignados</p>
+                    <p className="text-sm">No se encontraron tickets que coincidan con los filtros aplicados</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredTickets.map((ticket) => (
+                <TableRow 
+                  key={ticket.id} 
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={() => handleViewTicket(ticket)}
+                >
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <Checkbox 
+                      checked={selectedTickets.includes(ticket.id)} 
+                      onCheckedChange={() => toggleSelectTicket(ticket.id)}
+                      aria-label={`Seleccionar ticket ${ticket.id}`}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-mono text-sm">{ticket.id}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{ticket.title}</div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <div className="flex items-center">
+                      {getCategoryLabel(ticket.category)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {getPriorityBadge(ticket.priority)}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {getStatusBadge(ticket.status)}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {getSLARemaining(ticket.dueDate)}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(ticket.createdAt).toLocaleDateString()}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Acciones</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                        <DropdownMenuItem onClick={() => handleTicketAction('changeStatus', ticket.id)}>
+                          <RotateCw className="mr-2 h-4 w-4" />
+                          Cambiar Estado
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleTicketAction('addNote', ticket.id)}>
+                          <RotateCw className="mr-2 h-4 w-4" />
+                          Añadir Nota
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleTicketAction('reassign', ticket.id)}>
+                          <RotateCw className="mr-2 h-4 w-4" />
+                          Reasignar
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => handleTicketAction('resolve', ticket.id)}>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Marcar como Resuelto
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      
+      {/* Ticket Detail Drawer */}
       {selectedTicket && (
         <TicketDetailDrawer
-          open={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
-          ticket={{
-            id: selectedTicket.id,
-            title: selectedTicket.title,
-            status: selectedTicket.status,
-            priority: selectedTicket.priority,
-            category: selectedTicket.category,
-            creator: {
-              name: selectedTicket.creator,
-              email: 'usuario@example.com',
-              image: ''
-            },
-            assignedTo: {
-              name: 'Técnico Asignado',
-              email: 'tecnico@example.com',
-              image: ''
-            },
-            createdAt: selectedTicket.createdAt,
-            updatedAt: new Date().toISOString(),
-            description: selectedTicket.description,
-            history: [
-              {
-                id: '1',
-                action: 'Ticket creado',
-                timestamp: selectedTicket.createdAt,
-                user: selectedTicket.creator
-              },
-              {
-                id: '2',
-                action: 'Ticket asignado a Técnico',
-                timestamp: new Date(new Date(selectedTicket.createdAt).getTime() + 3600000).toISOString(),
-                user: 'Sistema'
-              },
-              {
-                id: '3',
-                action: 'Estado cambiado a En Progreso',
-                timestamp: new Date(new Date(selectedTicket.createdAt).getTime() + 7200000).toISOString(),
-                user: 'Técnico Asignado'
-              }
-            ],
-            comments: [
-              {
-                id: '1',
-                content: 'He revisado el problema y estoy trabajando en ello.',
-                timestamp: new Date(new Date(selectedTicket.createdAt).getTime() + 7200000).toISOString(),
-                user: {
-                  name: 'Técnico Asignado',
-                  email: 'tecnico@example.com',
-                  image: ''
-                },
-                isInternal: true
-              }
-            ],
-            attachments: []
-          }}
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          ticket={selectedTicket}
         />
       )}
-    </>
+    </div>
   );
 };

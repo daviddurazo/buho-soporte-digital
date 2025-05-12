@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateRangePicker } from '@/components/Reports/DateRangePicker';
@@ -9,9 +8,10 @@ import { PieChartView } from '@/components/Reports/PieChartView';
 import { TicketTable } from '@/components/Reports/TicketTable';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { CalendarRange, BarChart, LineChart, PieChart, Download, Files, FileText } from 'lucide-react';
+import { CalendarRange, BarChart, LineChart, PieChart, Download, FileText, FileCsv } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { DateRange } from 'react-day-picker';
+import { exportToCSV, exportToPDF } from '@/utils/exportUtils';
 
 export const ReportsContent: React.FC = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -30,6 +30,34 @@ export const ReportsContent: React.FC = () => {
     slaRate: '89%',
   };
 
+  // Mock data para exportación
+  const mockExportData = [
+    { id: 1, titulo: 'Problema con impresora', categoria: 'Hardware', prioridad: 'Alta', estado: 'Abierto', creacion: '2023-05-10' },
+    { id: 2, titulo: 'Error en aplicación', categoria: 'Software', prioridad: 'Media', estado: 'En progreso', creacion: '2023-05-12' },
+    { id: 3, titulo: 'Acceso denegado', categoria: 'Red', prioridad: 'Baja', estado: 'Cerrado', creacion: '2023-05-15' },
+    // ... más datos
+  ];
+
+  const exportColumns = ['ID', 'Título', 'Categoría', 'Prioridad', 'Estado', 'Fecha de creación'];
+
+  // Función para exportar a CSV
+  const handleExportCSV = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      exportToCSV(mockExportData, 'tickets-reporte');
+      setIsLoading(false);
+    }, 500);
+  };
+
+  // Función para exportar a PDF
+  const handleExportPDF = () => {
+    setIsLoading(true);
+    setTimeout(() => {
+      exportToPDF(mockExportData, 'tickets-reporte', exportColumns);
+      setIsLoading(false);
+    }, 500);
+  };
+
   // Mock categories
   const categories = [
     { id: 'hardware', name: 'Hardware' },
@@ -45,33 +73,16 @@ export const ReportsContent: React.FC = () => {
     toast.info(`Filtrado por categoría: ${category}`);
   };
 
-  // Export functions
-  const exportCSV = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success('Reporte CSV descargado exitosamente');
-    }, 1500);
-  };
-
-  const exportPDF = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success('Reporte PDF descargado exitosamente');
-    }, 1500);
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold tracking-tight">Reportes</h1>
         <div className="flex gap-2">
-          <Button onClick={exportCSV} disabled={isLoading} variant="outline">
-            <Files className="mr-2 h-4 w-4" />
+          <Button onClick={handleExportCSV} disabled={isLoading} variant="outline">
+            <FileCsv className="mr-2 h-4 w-4" />
             Exportar CSV
           </Button>
-          <Button onClick={exportPDF} disabled={isLoading} variant="outline">
+          <Button onClick={handleExportPDF} disabled={isLoading} variant="outline">
             <FileText className="mr-2 h-4 w-4" />
             Exportar PDF
           </Button>
