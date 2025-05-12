@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Drawer,
@@ -54,8 +53,11 @@ import {
   FilePen
 } from 'lucide-react';
 
+// Add at the top of the file
+import { Ticket } from '@/types';
+
 interface TicketDetailDrawerProps {
-  ticket: Ticket & { dueDate: string };
+  ticket: Ticket & { dueDate: string }; // This ensures dueDate is required in this component
   isOpen: boolean;
   onClose: () => void;
 }

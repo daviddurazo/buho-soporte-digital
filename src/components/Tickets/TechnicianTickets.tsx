@@ -175,11 +175,13 @@ export const TechnicianTickets: React.FC = () => {
   
   // Handle row click to open drawer
   const handleRowClick = (ticket: Ticket) => {
-    // Ensure ticket has dueDate property
+    // Create a new object that guarantees dueDate exists
     const ticketWithDueDate = {
       ...ticket,
       dueDate: ticket.dueDate || new Date().toISOString() // Use existing dueDate or set default
     };
+    
+    // Now TypeScript knows ticketWithDueDate always has a dueDate property
     setSelectedTicket(ticketWithDueDate);
     setIsDrawerOpen(true);
   };
@@ -430,11 +432,13 @@ export const TechnicianTickets: React.FC = () => {
       </div>
       
       {/* Detail drawer */}
-      <TicketDetailDrawer 
-        ticket={selectedTicket}
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-      />
+      {selectedTicket && (
+        <TicketDetailDrawer 
+          ticket={selectedTicket}
+          isOpen={isDrawerOpen}
+          onClose={() => setIsDrawerOpen(false)}
+        />
+      )}
     </div>
   );
 };

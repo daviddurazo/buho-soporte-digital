@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,7 +32,13 @@ const loginSchema = z.object({
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
-export function LoginForm() {
+// Update props interface to match what's being passed in AuthPage
+interface LoginFormProps {
+  onSwitchToRegister: () => void;
+  onSwitchToForgotPassword: () => void;
+}
+
+export function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword }: LoginFormProps) {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
@@ -195,12 +200,12 @@ export function LoginForm() {
       
       <div className="text-center text-sm">
         ¿No tienes una cuenta?{" "}
-        <Link 
-          to="/auth?mode=register" 
+        <button
+          onClick={onSwitchToRegister}
           className="font-medium text-primary hover:underline"
         >
           Regístrate
-        </Link>
+        </button>
       </div>
     </div>
   );
