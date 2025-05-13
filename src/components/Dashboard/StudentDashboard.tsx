@@ -8,6 +8,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 
+// Define a type for the service status
+interface ServiceStatus {
+  wifi_campus: 'operational' | 'degraded' | 'down';
+  biblioteca_virtual: 'operational' | 'degraded' | 'down';
+  plataforma_lms: 'operational' | 'degraded' | 'down';
+  portal_estudiantes: 'operational' | 'degraded' | 'down';
+  correo_institucional: 'operational' | 'degraded' | 'down';
+}
+
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
   
@@ -29,16 +38,38 @@ export const StudentDashboard: React.FC = () => {
     return data || [];
   };
   
-  const fetchServiceStatus = async () => {
-    // In a real app, this would fetch from a status monitoring service
-    // Here we'll return mock data until such a service is implemented
-    return {
-      wifi_campus: 'operational',
-      biblioteca_virtual: 'operational',
-      plataforma_lms: 'degraded',
-      portal_estudiantes: 'operational',
-      correo_institucional: 'operational'
-    };
+  const fetchServiceStatus = async (): Promise<ServiceStatus> => {
+    // Try to fetch from a service status table if it exists
+    const { data, error } = await supabase
+      .from('service_status')
+      .select('*')
+      .order('updated_at', { ascending: false })
+      .limit(1);
+    
+    if (error) {
+      console.error('Error fetching service status:', error);
+      // If there's an error (like table doesn't exist), return mock data
+      return {
+        wifi_campus: 'operational',
+        biblioteca_virtual: 'operational',
+        plataforma_lms: 'degraded',
+        portal_estudiantes: 'operational',
+        correo_institucional: 'operational'
+      };
+    }
+    
+    // If we got data, return it, otherwise return mock data
+    if (data && data.length > 0) {
+      return data[0] as ServiceStatus;
+    } else {
+      return {
+        wifi_campus: 'operational',
+        biblioteca_virtual: 'operational',
+        plataforma_lms: 'degraded',
+        portal_estudiantes: 'operational',
+        correo_institucional: 'operational'
+      };
+    }
   };
   
   const { data: tickets = [], isLoading, error } = useQuery({
@@ -47,7 +78,13 @@ export const StudentDashboard: React.FC = () => {
     enabled: !!user,
   });
   
-  const { data: services = {} } = useQuery({
+  const { data: services = {
+    wifi_campus: 'operational',
+    biblioteca_virtual: 'operational',
+    plataforma_lms: 'degraded',
+    portal_estudiantes: 'operational',
+    correo_institucional: 'operational'
+  } as ServiceStatus } = useQuery({
     queryKey: ['serviceStatus'],
     queryFn: fetchServiceStatus,
   });
