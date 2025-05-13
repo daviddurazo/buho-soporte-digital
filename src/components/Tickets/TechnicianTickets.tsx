@@ -64,6 +64,47 @@ const isSLACritical = (ticket: Ticket): boolean => {
   return hoursRemaining <= 2;
 };
 
+// Helper function to validate ticket status
+const validateTicketStatus = (status: string): TicketStatus => {
+  const validStatuses: TicketStatus[] = ['nuevo', 'asignado', 'en_progreso', 'resuelto', 'cerrado'];
+  return validStatuses.includes(status as TicketStatus) 
+    ? status as TicketStatus 
+    : 'nuevo'; // Default fallback if invalid status
+};
+
+// Helper function to validate ticket priority
+const validateTicketPriority = (priority: string): TicketPriority => {
+  const validPriorities: TicketPriority[] = ['baja', 'media', 'alta', 'crítica'];
+  return validPriorities.includes(priority as TicketPriority)
+    ? priority as TicketPriority
+    : 'media'; // Default fallback if invalid priority
+};
+
+// Type for database ticket to handle type conversion
+interface DatabaseTicket {
+  id: string;
+  ticket_number: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  category: string;
+  created_at: string;
+  updated_at: string;
+  creator_id: string | null;
+  assigned_to_id: string | null;
+  due_date: string | null;
+}
+
+// Function to convert DatabaseTicket to Ticket
+const convertToTicket = (dbTicket: DatabaseTicket): Ticket => {
+  return {
+    ...dbTicket,
+    status: validateTicketStatus(dbTicket.status),
+    priority: validateTicketPriority(dbTicket.priority)
+  };
+};
+
 export const TechnicianTickets: React.FC = () => {
   const { user } = useAuth();
   // States for filters
@@ -93,7 +134,8 @@ export const TechnicianTickets: React.FC = () => {
       throw error;
     }
 
-    return data;
+    // Convert the database tickets to our Ticket type
+    return data.map(convertToTicket);
   };
 
   const { data: tickets = [], isLoading, error } = useQuery({
