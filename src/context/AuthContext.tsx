@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
-import { User as AppUser } from '@/types';
+import { User as AppUser, UserRole } from '@/types';
 
 interface AuthContextProps {
   user: AppUser | null;
@@ -11,10 +11,13 @@ interface AuthContextProps {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string, userData: any) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  // Add these methods to fix the TypeScript errors
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  register: (firstName: string, lastName: string, email: string, password: string, role: UserRole) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
 }
 
-// Added for demonstration only - in a real app, you'd implement proper auth
-// This is a mock implementation to work with our existing app structure
 const AuthContext = createContext<AuthContextProps>({
   user: null,
   isAuthenticated: false,
@@ -22,6 +25,11 @@ const AuthContext = createContext<AuthContextProps>({
   signIn: async () => ({ error: null }),
   signUp: async () => ({ error: null }),
   signOut: async () => {},
+  // Add default implementations for the new methods
+  login: async () => {},
+  logout: async () => {},
+  register: async () => {},
+  forgotPassword: async () => {},
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -35,11 +43,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Try to get mock user from localStorage
       const storedUser = localStorage.getItem('mockUser');
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsedUser = JSON.parse(storedUser);
+        // Ensure the role is a valid UserRole type
+        if (typeof parsedUser.role === 'string' && ['student', 'professor', 'technician', 'admin'].includes(parsedUser.role)) {
+          setUser(parsedUser as AppUser);
+        } else {
+          console.error('Invalid user role in stored user data');
+        }
         setIsLoading(false);
       } else {
         // For testing, we'll auto-create a technician user
-        const mockTechnician = {
+        const mockTechnician: AppUser = {
           id: 'd7bed81c-d803-41a5-803f-128c79fb3a7d',
           firstName: 'Carlos',
           lastName: 'Mendoza',
@@ -176,6 +190,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Implement the missing methods to fix TypeScript errors
+  const login = async (email: string, password: string) => {
+    const { error } = await signIn(email, password);
+    if (error) throw error;
+  };
+
+  const logout = async () => {
+    await signOut();
+  };
+
+  const register = async (firstName: string, lastName: string, email: string, password: string, role: UserRole) => {
+    const userData = { firstName, lastName, role };
+    const { error } = await signUp(email, password, userData);
+    if (error) throw error;
+  };
+
+  const forgotPassword = async (email: string) => {
+    try {
+      // In a real app, you'd use supabase.auth.resetPasswordForEmail here
+      // For now, we'll just simulate sending a reset link
+      console.log(`Password reset email sent to ${email}`);
+    } catch (error) {
+      console.error('Error sending password reset:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -185,6 +226,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signIn,
         signUp,
         signOut,
+        login,
+        logout,
+        register,
+        forgotPassword,
       }}
     >
       {children}
