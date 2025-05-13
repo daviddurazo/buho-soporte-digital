@@ -3,69 +3,65 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-
-const dummyTickets = [
-  {
-    id: 'T-1001',
-    title: 'Falla en proyector del aula B-12',
-    priority: 'alta',
-    status: 'asignado',
-    createdAt: '2023-06-03T08:30:00Z',
-    category: 'hardware',
-    creator: 'Juan Pérez (Profesor)',
-  },
-  {
-    id: 'T-1002',
-    title: 'No puedo acceder a la red WiFi',
-    priority: 'media',
-    status: 'nuevo',
-    createdAt: '2023-06-03T09:45:00Z',
-    category: 'redes',
-    creator: 'Ana García (Estudiante)',
-  },
-  {
-    id: 'T-1003',
-    title: 'Error en carga de calificaciones',
-    priority: 'alta',
-    status: 'en_progreso',
-    createdAt: '2023-06-02T14:20:00Z',
-    category: 'software',
-    creator: 'Carlos Ruiz (Profesor)',
-  },
-  {
-    id: 'T-1004',
-    title: 'Problema con correo institucional',
-    priority: 'baja',
-    status: 'nuevo',
-    createdAt: '2023-06-02T16:10:00Z',
-    category: 'software',
-    creator: 'Laura Sánchez (Estudiante)',
-  },
-  {
-    id: 'T-1005',
-    title: 'Servidor de bases de datos lento',
-    priority: 'crítica',
-    status: 'en_progreso',
-    createdAt: '2023-06-01T10:30:00Z',
-    category: 'servidores',
-    creator: 'Admin Sistema',
-  },
-];
+import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { TicketStatus, TicketPriority } from '@/types';
 
 export const TechnicianDashboard: React.FC = () => {
-  const [tickets] = useState(dummyTickets);
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   
-  const filteredTickets = tickets.filter(ticket => 
+  const fetchTechnicianTickets = async () => {
+    if (!user) return [];
+    
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('assigned_to_id', user.id)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching technician tickets:', error);
+      throw error;
+    }
+    
+    return data || [];
+  };
+  
+  const fetchAllTickets = async () => {
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error('Error fetching all tickets:', error);
+      throw error;
+    }
+    
+    return data || [];
+  };
+  
+  const { data: tickets = [], isLoading, error } = useQuery({
+    queryKey: ['technicianDashboardTickets'],
+    queryFn: fetchAllTickets,
+  });
+  
+  const filteredTickets = tickets.filter((ticket: any) => 
     ticket.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    ticket.creator.toLowerCase().includes(searchTerm.toLowerCase())
+    ticket.ticket_number.toLowerCase().includes(searchTerm.toLowerCase())
   );
   
-  const assignedToMe = filteredTickets.filter(ticket => ticket.status === 'asignado' || ticket.status === 'en_progreso');
-  const unassignedTickets = filteredTickets.filter(ticket => ticket.status === 'nuevo');
+  const assignedToMe = filteredTickets.filter((ticket: any) => 
+    ticket.assigned_to_id === user?.id && 
+    (ticket.status === 'asignado' || ticket.status === 'en_progreso')
+  );
+  
+  const unassignedTickets = filteredTickets.filter((ticket: any) => ticket.status === 'nuevo');
   
   const getPriorityBadgeClass = (priority: string) => {
     switch(priority) {
@@ -107,10 +103,43 @@ export const TechnicianDashboard: React.FC = () => {
         return 'En Progreso';
       case 'resuelto':
         return 'Resuelto';
+      case 'cerrado':
+        return 'Cerrado';
       default:
         return status;
     }
   };
+  
+  const translateCategory = (category: string) => {
+    const categoryMap: Record<string, string> = {
+      'hardware': 'Hardware',
+      'software': 'Software',
+      'redes': 'Redes',
+      'servidores': 'Servidores',
+      'software_academico': 'Software Académico',
+      'sistema_calificaciones': 'Sistema de Calificaciones',
+    };
+    
+    return categoryMap[category] || category;
+  };
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-2 text-lg text-gray-500">Cargando tickets...</span>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="p-4 border border-red-200 bg-red-50 rounded-md text-red-600">
+        <p className="font-medium">Error al cargar los tickets</p>
+        <p className="text-sm">Por favor, intenta nuevamente más tarde.</p>
+      </div>
+    );
+  }
   
   return (
     <div className="space-y-6">
@@ -160,16 +189,15 @@ export const TechnicianDashboard: React.FC = () => {
                         <th className="px-4 py-3 text-left">Estado</th>
                         <th className="px-4 py-3 text-left">Creado</th>
                         <th className="px-4 py-3 text-left">Categoría</th>
-                        <th className="px-4 py-3 text-left">Creador</th>
                         <th className="px-4 py-3 text-left">Acciones</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {(tab === 'assigned' ? assignedToMe : 
                         tab === 'unassigned' ? unassignedTickets : 
-                          filteredTickets).map(ticket => (
+                          filteredTickets).map((ticket: any) => (
                         <tr key={ticket.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-3 text-blue-600 font-medium">{ticket.id}</td>
+                          <td className="px-4 py-3 text-blue-600 font-medium">{ticket.ticket_number}</td>
                           <td className="px-4 py-3 font-medium">{ticket.title}</td>
                           <td className="px-4 py-3">
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityBadgeClass(ticket.priority)}`}>
@@ -182,16 +210,15 @@ export const TechnicianDashboard: React.FC = () => {
                             </span>
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {new Date(ticket.createdAt).toLocaleDateString('es-MX')}
+                            {new Date(ticket.created_at).toLocaleDateString('es-MX')}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {ticket.category.charAt(0).toUpperCase() + ticket.category.slice(1)}
-                          </td>
-                          <td className="px-4 py-3 text-muted-foreground">
-                            {ticket.creator}
+                            {translateCategory(ticket.category)}
                           </td>
                           <td className="px-4 py-3">
-                            <Button size="sm" variant="outline">Ver</Button>
+                            <Button size="sm" variant="outline" asChild>
+                              <Link to={`/tickets`}>Ver</Link>
+                            </Button>
                           </td>
                         </tr>
                       ))}
@@ -233,7 +260,7 @@ export const TechnicianDashboard: React.FC = () => {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Prioridad Alta/Crítica</span>
-              <span className="font-medium">{tickets.filter(t => t.priority === 'alta' || t.priority === 'crítica').length}</span>
+              <span className="font-medium">{tickets.filter((t: any) => t.priority === 'alta' || t.priority === 'crítica').length}</span>
             </div>
           </CardContent>
         </Card>
@@ -246,19 +273,25 @@ export const TechnicianDashboard: React.FC = () => {
           <CardContent className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Hardware</span>
-              <span className="font-medium">{tickets.filter(t => t.category === 'hardware').length}</span>
+              <span className="font-medium">{tickets.filter((t: any) => t.category === 'hardware').length}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Software</span>
-              <span className="font-medium">{tickets.filter(t => t.category === 'software').length}</span>
+              <span className="font-medium">{tickets.filter((t: any) => t.category === 'software').length}</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Redes</span>
-              <span className="font-medium">{tickets.filter(t => t.category === 'redes').length}</span>
+              <span className="font-medium">{tickets.filter((t: any) => t.category === 'redes').length}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Servidores</span>
-              <span className="font-medium">{tickets.filter(t => t.category === 'servidores').length}</span>
+              <span className="text-sm text-muted-foreground">Otros</span>
+              <span className="font-medium">
+                {tickets.filter((t: any) => 
+                  t.category !== 'hardware' && 
+                  t.category !== 'software' && 
+                  t.category !== 'redes'
+                ).length}
+              </span>
             </div>
           </CardContent>
         </Card>
@@ -269,19 +302,21 @@ export const TechnicianDashboard: React.FC = () => {
             <CardDescription>Requieren atención inmediata</CardDescription>
           </CardHeader>
           <CardContent>
-            {tickets.filter(t => t.priority === 'crítica').length > 0 ? (
+            {tickets.filter((t: any) => t.priority === 'crítica').length > 0 ? (
               <div className="space-y-2">
                 {tickets
-                  .filter(t => t.priority === 'crítica')
-                  .map(ticket => (
+                  .filter((t: any) => t.priority === 'crítica')
+                  .map((ticket: any) => (
                     <div key={ticket.id} className="p-3 bg-red-50 border border-red-200 rounded-md">
                       <div className="flex justify-between items-center">
                         <div>
                           <p className="text-red-800 font-medium">{ticket.title}</p>
-                          <p className="text-xs text-red-700">{ticket.id} · {ticket.creator}</p>
+                          <p className="text-xs text-red-700">{ticket.ticket_number}</p>
                         </div>
-                        <Button size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-100">
-                          Atender
+                        <Button size="sm" variant="outline" className="border-red-300 text-red-700 hover:bg-red-100" asChild>
+                          <Link to={`/tickets`}>
+                            Atender
+                          </Link>
                         </Button>
                       </div>
                     </div>

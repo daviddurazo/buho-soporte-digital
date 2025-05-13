@@ -1,33 +1,39 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Projector, BookOpen, FileBarChart, FileText } from 'lucide-react';
+import { Projector, BookOpen, FileBarChart, FileText, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const dummyTickets = [
-  {
-    id: '1',
-    title: 'Proyector no funciona en Aula B-12',
-    status: 'asignado',
-    createdAt: '2023-06-02T09:45:00Z',
-  },
-  {
-    id: '2',
-    title: 'Problema con subida de calificaciones',
-    status: 'en_progreso',
-    createdAt: '2023-05-28T11:20:00Z',
-  },
-  {
-    id: '3',
-    title: 'Acceso al repositorio de materiales',
-    status: 'resuelto',
-    createdAt: '2023-05-20T16:30:00Z',
-  },
-];
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 
 export const ProfessorDashboard: React.FC = () => {
-  const [tickets] = useState(dummyTickets);
+  const { user } = useAuth();
+  
+  const fetchProfessorTickets = async () => {
+    if (!user) return [];
+    
+    const { data, error } = await supabase
+      .from('tickets')
+      .select('*')
+      .eq('creator_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(5);
+      
+    if (error) {
+      console.error('Error fetching professor tickets:', error);
+      throw error;
+    }
+    
+    return data || [];
+  };
+  
+  const { data: tickets = [], isLoading, error } = useQuery({
+    queryKey: ['professorTickets', user?.id],
+    queryFn: fetchProfessorTickets,
+    enabled: !!user,
+  });
   
   return (
     <div className="space-y-6">
@@ -71,15 +77,23 @@ export const ProfessorDashboard: React.FC = () => {
             <CardDescription>Incidencias recientes y su estado</CardDescription>
           </CardHeader>
           <CardContent>
-            {tickets.length > 0 ? (
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+              </div>
+            ) : error ? (
+              <div className="p-4 border border-red-200 bg-red-50 rounded-md">
+                <p className="text-red-600">Error al cargar los tickets</p>
+              </div>
+            ) : tickets.length > 0 ? (
               <div className="space-y-3">
-                {tickets.map(ticket => (
+                {tickets.map((ticket: any) => (
                   <Link to="/tickets" key={ticket.id} className="block">
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-md hover:bg-gray-100">
                       <div>
                         <p className="font-medium">{ticket.title}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(ticket.createdAt).toLocaleDateString('es-MX')}
+                          {new Date(ticket.created_at).toLocaleDateString('es-MX')}
                         </p>
                       </div>
                       <div>
@@ -92,7 +106,9 @@ export const ProfessorDashboard: React.FC = () => {
                         `}>
                           {ticket.status === 'nuevo' ? 'Nuevo' : 
                             ticket.status === 'asignado' ? 'Asignado' :
-                              ticket.status === 'en_progreso' ? 'En Progreso' : 'Resuelto'}
+                            ticket.status === 'en_progreso' ? 'En Progreso' : 
+                            ticket.status === 'resuelto' ? 'Resuelto' : 
+                            ticket.status === 'cerrado' ? 'Cerrado' : ticket.status}
                         </span>
                       </div>
                     </div>

@@ -13,68 +13,30 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { 
   Dialog, DialogContent, DialogHeader, 
   DialogTitle, DialogFooter, DialogDescription 
 } from "@/components/ui/dialog";
 import { UserRole } from "@/types";
-import { Plus, Search, Edit, Trash2, Eye, Filter } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Eye, Loader2 } from "lucide-react";
 import UserForm from "./UserForm";
 import UserDetails from "./UserDetails";
 import PermissionsMatrix from "./PermissionsMatrix";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock data - would come from API in a real app
-const mockUsers = [
-  {
-    id: "U-001",
-    firstName: "Juan",
-    lastName: "Pérez",
-    email: "juan.perez@unison.mx",
-    role: "student" as UserRole,
-    active: true,
-    createdAt: "2023-01-15T10:30:00Z",
-  },
-  {
-    id: "U-002",
-    firstName: "María",
-    lastName: "García",
-    email: "maria.garcia@unison.mx",
-    role: "professor" as UserRole,
-    active: true,
-    createdAt: "2022-09-05T14:20:00Z",
-  },
-  {
-    id: "U-003",
-    firstName: "Carlos",
-    lastName: "Rodríguez",
-    email: "carlos.rodriguez@unison.mx",
-    role: "technician" as UserRole,
-    active: true,
-    createdAt: "2022-11-20T09:15:00Z",
-  },
-  {
-    id: "U-004",
-    firstName: "Laura",
-    lastName: "Martínez",
-    email: "laura.martinez@unison.mx",
-    role: "admin" as UserRole,
-    active: true,
-    createdAt: "2022-08-12T11:45:00Z",
-  },
-  {
-    id: "U-005",
-    firstName: "Roberto",
-    lastName: "Fernández",
-    email: "roberto.fernandez@unison.mx",
-    role: "professor" as UserRole,
-    active: false,
-    createdAt: "2023-02-28T16:10:00Z",
-  },
-];
+interface User {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: UserRole;
+  active: boolean;
+  createdAt: string;
+}
 
 const UserManagement = () => {
-  const [users, setUsers] = useState(mockUsers);
   const [searchTerm, setSearchTerm] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -83,9 +45,38 @@ const UserManagement = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const itemsPerPage = 5;
+
+  const fetchUsers = async () => {
+    const { data: profiles, error } = await supabase
+      .from('profiles')
+      .select('*');
+      
+    if (error) {
+      console.error('Error fetching users:', error);
+      throw error;
+    }
+    
+    // Format the data to match our expected User structure
+    const formattedUsers = profiles.map(profile => ({
+      id: profile.id,
+      firstName: profile.first_name,
+      lastName: profile.last_name,
+      email: `${profile.first_name.toLowerCase()}.${profile.last_name.toLowerCase()}@unison.mx`, // Generate mock email
+      role: profile.role as UserRole,
+      active: true, // Default to active
+      createdAt: profile.created_at || new Date().toISOString()
+    }));
+    
+    return formattedUsers;
+  };
+  
+  const { data: users = [], isLoading, error } = useQuery({
+    queryKey: ['users'],
+    queryFn: fetchUsers
+  });
 
   // Filter users based on search term and filters
   const filteredUsers = users.filter((user) => {
@@ -112,51 +103,82 @@ const UserManagement = () => {
   // Calculate total pages
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
-  const handleCreateUser = (userData: any) => {
-    // In a real app, this would be an API call
-    const newUser = {
-      id: `U-${(users.length + 1).toString().padStart(3, '0')}`,
-      ...userData,
-      active: true,
-      createdAt: new Date().toISOString(),
-    };
-    
-    setUsers([...users, newUser]);
-    setIsCreateDialogOpen(false);
-    toast.success("Usuario creado exitosamente");
+  const handleCreateUser = async (userData: any) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .insert([{
+          id: crypto.randomUUID(), // Generate a UUID
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          role: userData.role,
+          department: userData.department || null,
+        }]);
+        
+      if (error) throw error;
+      
+      toast.success("Usuario creado exitosamente");
+      setIsCreateDialogOpen(false);
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error("Error al crear usuario");
+    }
   };
 
-  const handleEditUser = (userData: any) => {
-    // In a real app, this would be an API call
-    const updatedUsers = users.map((user) => 
-      user.id === selectedUser.id ? { ...user, ...userData } : user
-    );
+  const handleEditUser = async (userData: any) => {
+    if (!selectedUser) return;
     
-    setUsers(updatedUsers);
-    setIsEditDialogOpen(false);
-    toast.success("Usuario actualizado exitosamente");
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          role: userData.role,
+          department: userData.department || null,
+        })
+        .eq('id', selectedUser.id);
+        
+      if (error) throw error;
+      
+      toast.success("Usuario actualizado exitosamente");
+      setIsEditDialogOpen(false);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error("Error al actualizar usuario");
+    }
   };
 
-  const handleDeleteUser = () => {
-    // In a real app, this would be an API call
-    const updatedUsers = users.filter((user) => user.id !== selectedUser.id);
+  const handleDeleteUser = async () => {
+    if (!selectedUser) return;
     
-    setUsers(updatedUsers);
-    setIsDeleteDialogOpen(false);
-    toast.success("Usuario eliminado exitosamente");
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', selectedUser.id);
+        
+      if (error) throw error;
+      
+      toast.success("Usuario eliminado exitosamente");
+      setIsDeleteDialogOpen(false);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error("Error al eliminar usuario");
+    }
   };
 
-  const openEditDialog = (user: any) => {
+  const openEditDialog = (user: User) => {
     setSelectedUser(user);
     setIsEditDialogOpen(true);
   };
 
-  const openDeleteDialog = (user: any) => {
+  const openDeleteDialog = (user: User) => {
     setSelectedUser(user);
     setIsDeleteDialogOpen(true);
   };
 
-  const openDetailsDialog = (user: any) => {
+  const openDetailsDialog = (user: User) => {
     setSelectedUser(user);
     setIsDetailsDialogOpen(true);
   };
@@ -180,6 +202,24 @@ const UserManagement = () => {
     
     return roleTranslations[role] || role;
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+        <span className="ml-2 text-lg text-gray-500">Cargando usuarios...</span>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="p-4 border border-red-200 bg-red-50 rounded-md text-red-600">
+        <p className="font-medium">Error al cargar los usuarios</p>
+        <p className="text-sm">Por favor, intenta nuevamente más tarde.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-6">
@@ -274,7 +314,7 @@ const UserManagement = () => {
                   ) : (
                     paginatedUsers.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.id}</TableCell>
+                        <TableCell className="font-medium">{user.id.substring(0, 8)}...</TableCell>
                         <TableCell>{user.firstName}</TableCell>
                         <TableCell>{user.lastName}</TableCell>
                         <TableCell>{user.email}</TableCell>
