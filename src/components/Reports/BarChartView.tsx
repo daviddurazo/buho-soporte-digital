@@ -16,12 +16,6 @@ interface CategoryData {
   fill?: string;
 }
 
-// Define the type for the RPC response
-interface CategoryCount {
-  category: string;
-  count: string; // It's returned as string from Postgres
-}
-
 export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, selectedCategory }) => {
   const fetchCategoryData = async (): Promise<CategoryData[]> => {
     try {
