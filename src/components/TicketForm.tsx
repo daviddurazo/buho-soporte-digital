@@ -71,7 +71,7 @@ const TicketForm: React.FC = () => {
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Categoría</Label>
-                <Select value={category} onValueChange={setCategory}>
+                <Select value={category || undefined} onValueChange={setCategory}>
                   <SelectTrigger id="category" aria-label="Seleccionar categoría">
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>

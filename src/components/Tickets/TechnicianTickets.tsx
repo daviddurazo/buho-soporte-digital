@@ -306,14 +306,15 @@ export const TechnicianTickets: React.FC = () => {
           <Search className="h-4 w-4 absolute left-3 top-3 text-gray-500" />
         </div>
         <Select 
-          value={priorityFilter || ''} 
+          value={priorityFilter || undefined} 
           onValueChange={(value) => setPriorityFilter(value || null)}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrar por prioridad" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas las prioridades</SelectItem>
+            {/* Fix: Replace empty string with a non-empty string value */}
+            <SelectItem value="all">Todas las prioridades</SelectItem>
             <SelectItem value="crítica">Crítica</SelectItem>
             <SelectItem value="alta">Alta</SelectItem>
             <SelectItem value="media">Media</SelectItem>
@@ -321,14 +322,15 @@ export const TechnicianTickets: React.FC = () => {
           </SelectContent>
         </Select>
         <Select 
-          value={categoryFilter || ''} 
+          value={categoryFilter || undefined} 
           onValueChange={(value) => setCategoryFilter(value || null)}
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrar por categoría" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Todas las categorías</SelectItem>
+            {/* Fix: Replace empty string with a non-empty string value */}
+            <SelectItem value="all">Todas las categorías</SelectItem>
             {technicianCategories.map((category) => (
               <SelectItem key={category} value={category}>
                 {translateCategory(category)}

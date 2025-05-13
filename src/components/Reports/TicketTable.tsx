@@ -17,7 +17,7 @@ export const TicketTable: React.FC<TicketTableProps> = ({ selectedCategory }) =>
       .select('title, category, count(*)')
       .order('count', { ascending: false });
       
-    if (selectedCategory) {
+    if (selectedCategory && selectedCategory !== 'all') {
       query = query.eq('category', selectedCategory);
     }
     
