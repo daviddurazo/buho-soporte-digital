@@ -16,6 +16,11 @@ interface CategoryData {
   fill?: string;
 }
 
+interface CategoryCount {
+  category: string;
+  count: string; // It's returned as string from Postgres
+}
+
 export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, selectedCategory }) => {
   const fetchCategoryData = async (): Promise<CategoryData[]> => {
     try {
@@ -57,7 +62,7 @@ export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, sel
         'software_academico': 'Software Académico',
       };
       
-      return data.map(item => ({
+      return (data as CategoryCount[]).map(item => ({
         category: item.category,
         displayName: categoryMapping[item.category] || item.category,
         count: Number(item.count),

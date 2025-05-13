@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,9 +40,7 @@ export const StudentDashboard: React.FC = () => {
   const fetchServiceStatus = async (): Promise<ServiceStatus> => {
     // Try to fetch from a service status table if it exists
     try {
-      // We need to explicitly specify the return type for service_status table
-      // We can't directly use .from('service_status') due to types not being updated
-      // Instead we'll use a custom RPC or a raw query
+      // Use the RPC function to get service status
       const { data, error } = await supabase
         .rpc('get_service_status');
       
@@ -52,7 +49,7 @@ export const StudentDashboard: React.FC = () => {
         throw error;
       }
       
-      // If we got data, return it
+      // If we got data, return it (cast to ServiceStatus to ensure type safety)
       if (data) {
         return data as ServiceStatus;
       }

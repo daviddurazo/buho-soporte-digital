@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,12 @@ interface TicketStats {
   resolved: number;
   closed: number;
   assigned: number;
+}
+
+// Define types for RPC function responses
+interface StatusCount {
+  status: string;
+  count: string; // It's returned as string from Postgres
 }
 
 export const TechnicianDashboard: React.FC = () => {
@@ -69,13 +76,15 @@ export const TechnicianDashboard: React.FC = () => {
       }
       
       // If RPC doesn't exist yet or returns no data, use mock data
-      const statusCounts = statusData && statusData.length > 0 ? statusData : [
-        { status: 'nuevo', count: 15 },
-        { status: 'asignado', count: 8 },
-        { status: 'en_progreso', count: 12 },
-        { status: 'resuelto', count: 25 },
-        { status: 'cerrado', count: 18 }
-      ];
+      const statusCounts = statusData && statusData.length > 0 
+        ? (statusData as StatusCount[]) 
+        : [
+            { status: 'nuevo', count: '15' },
+            { status: 'asignado', count: '8' },
+            { status: 'en_progreso', count: '12' },
+            { status: 'resuelto', count: '25' },
+            { status: 'cerrado', count: '18' }
+          ];
       
       // Get tickets assigned to current technician
       let assignedCount = 0;
@@ -95,11 +104,11 @@ export const TechnicianDashboard: React.FC = () => {
       
       // Format the stats
       const stats: TicketStats = {
-        total: statusCounts.reduce((sum: number, item: any) => sum + Number(item.count), 0),
-        new: statusCounts.find((s: any) => s.status === 'nuevo')?.count || 0,
-        inProgress: statusCounts.find((s: any) => s.status === 'en_progreso')?.count || 0,
-        resolved: statusCounts.find((s: any) => s.status === 'resuelto')?.count || 0,
-        closed: statusCounts.find((s: any) => s.status === 'cerrado')?.count || 0,
+        total: statusCounts.reduce((sum: number, item: StatusCount) => sum + Number(item.count), 0),
+        new: Number(statusCounts.find((s: StatusCount) => s.status === 'nuevo')?.count || 0),
+        inProgress: Number(statusCounts.find((s: StatusCount) => s.status === 'en_progreso')?.count || 0),
+        resolved: Number(statusCounts.find((s: StatusCount) => s.status === 'resuelto')?.count || 0),
+        closed: Number(statusCounts.find((s: StatusCount) => s.status === 'cerrado')?.count || 0),
         assigned: assignedCount
       };
       

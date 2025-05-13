@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { BarChart, FileText, Users, Settings, Clock, Calendar } from 'lucide-react';
@@ -25,6 +26,22 @@ import {
 interface ChartDataItem {
   name: string;
   value: number;
+}
+
+// Define types for RPC function responses
+interface StatusCount {
+  status: string;
+  count: string; // It's returned as string from Postgres
+}
+
+interface CategoryCount {
+  category: string;
+  count: string; // It's returned as string from Postgres
+}
+
+interface RoleCount {
+  role: string;
+  count: string; // It's returned as string from Postgres
 }
 
 const AdminDashboard = () => {
@@ -60,7 +77,7 @@ const AdminDashboard = () => {
         'cerrado': 'Cerrados'
       };
       
-      return data.map((item: any) => ({
+      return (data as StatusCount[]).map((item) => ({
         name: statusMapping[item.status] || item.status,
         value: Number(item.count)
       }));
@@ -112,7 +129,7 @@ const AdminDashboard = () => {
         'servidores': 'Servidores'
       };
       
-      return data.map((item: any) => ({
+      return (data as CategoryCount[]).map((item) => ({
         name: categoryMapping[item.category] || item.category,
         value: Number(item.count)
       }));
@@ -159,7 +176,7 @@ const AdminDashboard = () => {
         'admin': 'Administradores'
       };
       
-      return data.map((item: any) => ({
+      return (data as RoleCount[]).map((item) => ({
         name: roleMapping[item.role] || item.role,
         value: Number(item.count)
       }));
