@@ -41,12 +41,11 @@ export const StudentDashboard: React.FC = () => {
   const fetchServiceStatus = async (): Promise<ServiceStatus> => {
     // Try to fetch from a service status table if it exists
     try {
+      // We need to explicitly specify the return type for service_status table
+      // We can't directly use .from('service_status') due to types not being updated
+      // Instead we'll use a custom RPC or a raw query
       const { data, error } = await supabase
-        .from('service_status')
-        .select('*')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .single();
+        .rpc('get_service_status');
       
       if (error) {
         console.error('Error fetching service status:', error);
@@ -54,7 +53,11 @@ export const StudentDashboard: React.FC = () => {
       }
       
       // If we got data, return it
-      return data as ServiceStatus;
+      if (data) {
+        return data as ServiceStatus;
+      }
+      
+      throw new Error('No service status data returned');
     } catch (error) {
       console.error('Error in fetchServiceStatus:', error);
       // If there's an error (like table doesn't exist), return mock data
@@ -74,16 +77,15 @@ export const StudentDashboard: React.FC = () => {
     enabled: !!user,
   });
   
-  const { data: services } = useQuery({
+  const { data: services = {
+    wifi_campus: 'operational',
+    biblioteca_virtual: 'operational',
+    plataforma_lms: 'degraded',
+    portal_estudiantes: 'operational',
+    correo_institucional: 'operational'
+  } as ServiceStatus } = useQuery({
     queryKey: ['serviceStatus'],
-    queryFn: fetchServiceStatus,
-    initialData: {
-      wifi_campus: 'operational',
-      biblioteca_virtual: 'operational',
-      plataforma_lms: 'degraded',
-      portal_estudiantes: 'operational',
-      correo_institucional: 'operational'
-    } as ServiceStatus
+    queryFn: fetchServiceStatus
   });
   
   return (

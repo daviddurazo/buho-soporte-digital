@@ -53,3 +53,20 @@ INSERT INTO service_status
 SELECT 
   'operational', 'operational', 'degraded', 'operational', 'operational'
 WHERE NOT EXISTS (SELECT 1 FROM service_status);
+
+-- Create a function to get the latest service status
+CREATE OR REPLACE FUNCTION get_service_status()
+RETURNS JSON LANGUAGE SQL AS $$
+  SELECT row_to_json(s)
+  FROM (
+    SELECT 
+      wifi_campus, 
+      biblioteca_virtual, 
+      plataforma_lms, 
+      portal_estudiantes, 
+      correo_institucional
+    FROM service_status
+    ORDER BY updated_at DESC 
+    LIMIT 1
+  ) s;
+$$;

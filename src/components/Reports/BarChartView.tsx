@@ -18,17 +18,55 @@ interface CategoryData {
 
 export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, selectedCategory }) => {
   const fetchCategoryData = async (): Promise<CategoryData[]> => {
-    // Updated to use the stored procedure for getting tickets by category
-    const { data, error } = await supabase.rpc('get_tickets_by_category');
+    try {
+      // Call the stored procedure for getting tickets by category
+      const { data, error } = await supabase.rpc('get_tickets_by_category');
+        
+      if (error) {
+        console.error('Error fetching category data:', error);
+        throw error;
+      }
       
-    if (error) {
-      console.error('Error fetching category data:', error);
-      throw error;
-    }
-    
-    // If data is not available yet or the RPC doesn't exist, use mock data
-    if (!data || data.length === 0) {
-      const mockData: CategoryData[] = [
+      // If data is not available yet or the RPC doesn't exist, use mock data
+      if (!data || data.length === 0) {
+        const mockData: CategoryData[] = [
+          { category: 'hardware', count: 42 },
+          { category: 'software', count: 28 },
+          { category: 'redes', count: 15 },
+          { category: 'servidores', count: 10 },
+          { category: 'wifi_campus', count: 22 },
+          { category: 'acceso_biblioteca', count: 18 },
+          { category: 'problemas_lms', count: 12 },
+          { category: 'correo_institucional', count: 8 },
+          { category: 'sistema_calificaciones', count: 14 },
+          { category: 'software_academico', count: 9 },
+        ];
+        return mockData;
+      }
+      
+      const categoryMapping: Record<string, string> = {
+        'hardware': 'Hardware',
+        'software': 'Software',
+        'redes': 'Redes',
+        'servidores': 'Servidores',
+        'wifi_campus': 'WiFi Campus',
+        'acceso_biblioteca': 'Biblioteca',
+        'problemas_lms': 'LMS',
+        'correo_institucional': 'Correo',
+        'sistema_calificaciones': 'Calificaciones',
+        'software_academico': 'Software Académico',
+      };
+      
+      return data.map(item => ({
+        category: item.category,
+        displayName: categoryMapping[item.category] || item.category,
+        count: Number(item.count),
+        fill: selectedCategory === item.category ? '#1e40af' : '#3b82f6'
+      }));
+    } catch (error) {
+      console.error('Error in fetchCategoryData:', error);
+      // Return mock data on error
+      return [
         { category: 'hardware', count: 42 },
         { category: 'software', count: 28 },
         { category: 'redes', count: 15 },
@@ -40,28 +78,7 @@ export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, sel
         { category: 'sistema_calificaciones', count: 14 },
         { category: 'software_academico', count: 9 },
       ];
-      return mockData;
     }
-    
-    const categoryMapping: Record<string, string> = {
-      'hardware': 'Hardware',
-      'software': 'Software',
-      'redes': 'Redes',
-      'servidores': 'Servidores',
-      'wifi_campus': 'WiFi Campus',
-      'acceso_biblioteca': 'Biblioteca',
-      'problemas_lms': 'LMS',
-      'correo_institucional': 'Correo',
-      'sistema_calificaciones': 'Calificaciones',
-      'software_academico': 'Software Académico',
-    };
-    
-    return data.map(item => ({
-      category: item.category,
-      displayName: categoryMapping[item.category] || item.category,
-      count: Number(item.count),
-      fill: selectedCategory === item.category ? '#1e40af' : '#3b82f6'
-    }));
   };
   
   const { data = [] } = useQuery({

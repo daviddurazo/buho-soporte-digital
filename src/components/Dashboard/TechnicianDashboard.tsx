@@ -78,14 +78,19 @@ export const TechnicianDashboard: React.FC = () => {
       ];
       
       // Get tickets assigned to current technician
-      const { data: assignedData, error: assignedError } = await supabase
-        .from('tickets')
-        .select('id')
-        .eq('assigned_to_id', user?.id);
+      let assignedCount = 0;
+      if (user) {
+        const { data: assignedData, error: assignedError } = await supabase
+          .from('tickets')
+          .select('id')
+          .eq('assigned_to_id', user.id);
+          
+        if (assignedError) {
+          console.error('Error fetching assigned count:', assignedError);
+          throw assignedError;
+        }
         
-      if (assignedError) {
-        console.error('Error fetching assigned count:', assignedError);
-        throw assignedError;
+        assignedCount = assignedData?.length || 0;
       }
       
       // Format the stats
@@ -95,7 +100,7 @@ export const TechnicianDashboard: React.FC = () => {
         inProgress: statusCounts.find((s: any) => s.status === 'en_progreso')?.count || 0,
         resolved: statusCounts.find((s: any) => s.status === 'resuelto')?.count || 0,
         closed: statusCounts.find((s: any) => s.status === 'cerrado')?.count || 0,
-        assigned: assignedData?.length || 0
+        assigned: assignedCount
       };
       
       return stats;
