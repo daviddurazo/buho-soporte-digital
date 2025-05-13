@@ -9,9 +9,16 @@ interface BarChartViewProps {
   selectedCategory: string | null;
 }
 
+interface CategoryData {
+  category: string;
+  count: number;
+  displayName?: string;
+  fill?: string;
+}
+
 export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, selectedCategory }) => {
-  const fetchCategoryData = async () => {
-    // Updated query to use correct Supabase syntax for grouping
+  const fetchCategoryData = async (): Promise<CategoryData[]> => {
+    // Updated to use the stored procedure for getting tickets by category
     const { data, error } = await supabase.rpc('get_tickets_by_category');
       
     if (error) {
@@ -20,8 +27,8 @@ export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, sel
     }
     
     // If data is not available yet or the RPC doesn't exist, use mock data
-    if (!data) {
-      const mockData = [
+    if (!data || data.length === 0) {
+      const mockData: CategoryData[] = [
         { category: 'hardware', count: 42 },
         { category: 'software', count: 28 },
         { category: 'redes', count: 15 },
@@ -52,7 +59,7 @@ export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, sel
     return data.map(item => ({
       category: item.category,
       displayName: categoryMapping[item.category] || item.category,
-      count: item.count,
+      count: Number(item.count),
       fill: selectedCategory === item.category ? '#1e40af' : '#3b82f6'
     }));
   };

@@ -40,28 +40,24 @@ export const StudentDashboard: React.FC = () => {
   
   const fetchServiceStatus = async (): Promise<ServiceStatus> => {
     // Try to fetch from a service status table if it exists
-    const { data, error } = await supabase
-      .from('service_status')
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .limit(1);
-    
-    if (error) {
-      console.error('Error fetching service status:', error);
+    try {
+      const { data, error } = await supabase
+        .from('service_status')
+        .select('*')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error) {
+        console.error('Error fetching service status:', error);
+        throw error;
+      }
+      
+      // If we got data, return it
+      return data as ServiceStatus;
+    } catch (error) {
+      console.error('Error in fetchServiceStatus:', error);
       // If there's an error (like table doesn't exist), return mock data
-      return {
-        wifi_campus: 'operational',
-        biblioteca_virtual: 'operational',
-        plataforma_lms: 'degraded',
-        portal_estudiantes: 'operational',
-        correo_institucional: 'operational'
-      };
-    }
-    
-    // If we got data, return it, otherwise return mock data
-    if (data && data.length > 0) {
-      return data[0] as ServiceStatus;
-    } else {
       return {
         wifi_campus: 'operational',
         biblioteca_virtual: 'operational',
@@ -78,15 +74,16 @@ export const StudentDashboard: React.FC = () => {
     enabled: !!user,
   });
   
-  const { data: services = {
-    wifi_campus: 'operational',
-    biblioteca_virtual: 'operational',
-    plataforma_lms: 'degraded',
-    portal_estudiantes: 'operational',
-    correo_institucional: 'operational'
-  } as ServiceStatus } = useQuery({
+  const { data: services } = useQuery({
     queryKey: ['serviceStatus'],
     queryFn: fetchServiceStatus,
+    initialData: {
+      wifi_campus: 'operational',
+      biblioteca_virtual: 'operational',
+      plataforma_lms: 'degraded',
+      portal_estudiantes: 'operational',
+      correo_institucional: 'operational'
+    } as ServiceStatus
   });
   
   return (
