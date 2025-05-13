@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -68,7 +67,10 @@ export const TechnicianDashboard: React.FC = () => {
   const fetchTicketStats = async (): Promise<TicketStats> => {
     try {
       // Get tickets by status using RPC
-      const { data: statusData, error: statusError } = await supabase.rpc('get_tickets_by_status');
+      const { data: statusData, error: statusError } = await supabase.rpc('get_tickets_by_status') as {
+        data: StatusCount[] | null;
+        error: any;
+      };
       
       if (statusError) {
         console.error('Error fetching ticket stats:', statusError);
@@ -77,7 +79,7 @@ export const TechnicianDashboard: React.FC = () => {
       
       // If RPC doesn't exist yet or returns no data, use mock data
       const statusCounts = statusData && statusData.length > 0 
-        ? (statusData as StatusCount[]) 
+        ? statusData
         : [
             { status: 'nuevo', count: '15' },
             { status: 'asignado', count: '8' },

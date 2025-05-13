@@ -16,6 +16,7 @@ interface CategoryData {
   fill?: string;
 }
 
+// Define the type for the RPC response
 interface CategoryCount {
   category: string;
   count: string; // It's returned as string from Postgres
@@ -25,7 +26,10 @@ export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, sel
   const fetchCategoryData = async (): Promise<CategoryData[]> => {
     try {
       // Call the stored procedure for getting tickets by category
-      const { data, error } = await supabase.rpc('get_tickets_by_category');
+      const { data, error } = await supabase.rpc('get_tickets_by_category') as { 
+        data: CategoryCount[] | null; 
+        error: any;
+      };
         
       if (error) {
         console.error('Error fetching category data:', error);
@@ -62,7 +66,7 @@ export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, sel
         'software_academico': 'Software Académico',
       };
       
-      return (data as CategoryCount[]).map(item => ({
+      return data.map(item => ({
         category: item.category,
         displayName: categoryMapping[item.category] || item.category,
         count: Number(item.count),

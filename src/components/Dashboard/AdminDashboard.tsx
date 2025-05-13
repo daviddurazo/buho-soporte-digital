@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { BarChart, FileText, Users, Settings, Clock, Calendar } from 'lucide-react';
@@ -50,7 +49,10 @@ const AdminDashboard = () => {
   // Fetch ticket counts by status using stored procedure
   const fetchTicketsByStatus = async (): Promise<ChartDataItem[]> => {
     try {
-      const { data, error } = await supabase.rpc('get_tickets_by_status');
+      const { data, error } = await supabase.rpc('get_tickets_by_status') as {
+        data: StatusCount[] | null;
+        error: any;
+      };
         
       if (error) {
         console.error('Error fetching tickets by status:', error);
@@ -77,7 +79,7 @@ const AdminDashboard = () => {
         'cerrado': 'Cerrados'
       };
       
-      return (data as StatusCount[]).map((item) => ({
+      return data.map((item) => ({
         name: statusMapping[item.status] || item.status,
         value: Number(item.count)
       }));
@@ -96,7 +98,10 @@ const AdminDashboard = () => {
   // Fetch ticket counts by category using stored procedure
   const fetchTicketsByCategory = async (): Promise<ChartDataItem[]> => {
     try {
-      const { data, error } = await supabase.rpc('get_tickets_by_category');
+      const { data, error } = await supabase.rpc('get_tickets_by_category') as {
+        data: CategoryCount[] | null;
+        error: any;
+      };
         
       if (error) {
         console.error('Error fetching tickets by category:', error);
@@ -129,7 +134,7 @@ const AdminDashboard = () => {
         'servidores': 'Servidores'
       };
       
-      return (data as CategoryCount[]).map((item) => ({
+      return data.map((item) => ({
         name: categoryMapping[item.category] || item.category,
         value: Number(item.count)
       }));
@@ -151,7 +156,10 @@ const AdminDashboard = () => {
   // Fetch user counts by role
   const fetchUsersByRole = async (): Promise<ChartDataItem[]> => {
     try {
-      const { data, error } = await supabase.rpc('get_users_by_role');
+      const { data, error } = await supabase.rpc('get_users_by_role') as {
+        data: RoleCount[] | null;
+        error: any;
+      };
         
       if (error) {
         console.error('Error fetching users by role:', error);
@@ -176,7 +184,7 @@ const AdminDashboard = () => {
         'admin': 'Administradores'
       };
       
-      return (data as RoleCount[]).map((item) => ({
+      return data.map((item) => ({
         name: roleMapping[item.role] || item.role,
         value: Number(item.count)
       }));

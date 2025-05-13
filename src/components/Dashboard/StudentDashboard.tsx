@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,16 +43,16 @@ export const StudentDashboard: React.FC = () => {
     try {
       // Use the RPC function to get service status
       const { data, error } = await supabase
-        .rpc('get_service_status');
+        .rpc('get_service_status') as { data: ServiceStatus | null; error: any };
       
       if (error) {
         console.error('Error fetching service status:', error);
         throw error;
       }
       
-      // If we got data, return it (cast to ServiceStatus to ensure type safety)
+      // If we got data, return it
       if (data) {
-        return data as ServiceStatus;
+        return data;
       }
       
       throw new Error('No service status data returned');
