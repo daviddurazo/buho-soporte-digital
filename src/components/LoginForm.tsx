@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,7 +18,6 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import { LogIn, Mail } from 'lucide-react';
-import { loginWithMicrosoft } from '@/services/MicrosoftAuth';
 
 // Schema para validación
 const loginSchema = z.object({
@@ -76,11 +76,12 @@ export function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword }: Logi
   const handleMicrosoftLogin = async () => {
     setIsMicrosoftLoading(true);
     try {
-      const userData = await loginWithMicrosoft();
-      toast.success('Inicio de sesión con Microsoft exitoso');
-      navigate('/dashboard');
+      // We're not implementing real Microsoft OAuth here, but in a real application
+      // this would call supabase.auth.signInWithOAuth({ provider: 'microsoft' })
+      toast.error('Inicio de sesión con Microsoft no implementado');
     } catch (error) {
       console.error('Error en inicio de sesión con Microsoft:', error);
+      toast.error('Error al iniciar sesión con Microsoft');
     } finally {
       setIsMicrosoftLoading(false);
     }
@@ -160,12 +161,13 @@ export function LoginForm({ onSwitchToRegister, onSwitchToForgotPassword }: Logi
               <FormItem>
                 <div className="flex items-center justify-between">
                   <FormLabel>Contraseña</FormLabel>
-                  <Link 
-                    to="/auth?mode=forgot-password"
+                  <button 
+                    type="button"
+                    onClick={onSwitchToForgotPassword}
                     className="text-sm text-primary hover:underline"
                   >
                     ¿Olvidaste tu contraseña?
-                  </Link>
+                  </button>
                 </div>
                 <FormControl>
                   <Input

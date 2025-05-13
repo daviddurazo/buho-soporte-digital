@@ -29,10 +29,38 @@ export const ProfessorDashboard: React.FC = () => {
     return data || [];
   };
   
+  const fetchMaintenanceSchedule = async () => {
+    // In a real app, this would fetch from a maintenance schedule table
+    // For now, we'll return mock data
+    return [
+      {
+        id: '1',
+        title: 'Actualización Sistema de Calificaciones',
+        date: '2023-06-15',
+        timeRange: '22:00 - 02:00',
+        status: 'upcoming',
+        description: 'El sistema no estará disponible durante este período.'
+      },
+      {
+        id: '2',
+        title: 'Mantenimiento Plataforma LMS',
+        date: '2023-06-20',
+        timeRange: '01:00 - 05:00',
+        status: 'upcoming',
+        description: 'Se recomienda guardar trabajo pendiente antes de esta fecha.'
+      }
+    ];
+  };
+  
   const { data: tickets = [], isLoading, error } = useQuery({
     queryKey: ['professorTickets', user?.id],
     queryFn: fetchProfessorTickets,
     enabled: !!user,
+  });
+  
+  const { data: maintenanceSchedule = [] } = useQuery({
+    queryKey: ['maintenanceSchedule'],
+    queryFn: fetchMaintenanceSchedule,
   });
   
   return (
@@ -130,31 +158,20 @@ export const ProfessorDashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="p-3 border border-gray-200 rounded">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">Actualización Sistema de Calificaciones</p>
-                    <p className="text-sm text-muted-foreground">Junio 15, 2023 · 22:00 - 02:00</p>
+              {maintenanceSchedule.map((item: any) => (
+                <div key={item.id} className="p-3 border border-gray-200 rounded">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.date} · {item.timeRange}</p>
+                    </div>
+                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {item.status === 'upcoming' ? 'Próximo' : 'Completado'}
+                    </span>
                   </div>
-                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    Próximo
-                  </span>
+                  <p className="mt-2 text-sm">{item.description}</p>
                 </div>
-                <p className="mt-2 text-sm">El sistema no estará disponible durante este período.</p>
-              </div>
-              
-              <div className="p-3 border border-gray-200 rounded">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium">Mantenimiento Plataforma LMS</p>
-                    <p className="text-sm text-muted-foreground">Junio 20, 2023 · 01:00 - 05:00</p>
-                  </div>
-                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    Próximo
-                  </span>
-                </div>
-                <p className="mt-2 text-sm">Se recomienda guardar trabajo pendiente antes de esta fecha.</p>
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>

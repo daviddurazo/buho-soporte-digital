@@ -23,7 +23,7 @@ import { Plus, Search, Edit, Trash2, Eye, Loader2 } from "lucide-react";
 import UserForm from "./UserForm";
 import UserDetails from "./UserDetails";
 import PermissionsMatrix from "./PermissionsMatrix";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
 interface User {
@@ -46,6 +46,7 @@ const UserManagement = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const queryClient = useQueryClient();
 
   const itemsPerPage = 5;
 
@@ -78,6 +79,86 @@ const UserManagement = () => {
     queryFn: fetchUsers
   });
 
+  const createUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      const { error } = await supabase
+        .from('profiles')
+        .insert([{
+          id: crypto.randomUUID(), // Generate a UUID
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          role: userData.role,
+          department: userData.department || null,
+        }]);
+        
+      if (error) throw error;
+      
+      return userData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success("Usuario creado exitosamente");
+      setIsCreateDialogOpen(false);
+    },
+    onError: (error) => {
+      console.error('Error creating user:', error);
+      toast.error("Error al crear usuario");
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async (userData: any) => {
+      if (!selectedUser) throw new Error("No user selected");
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          role: userData.role,
+          department: userData.department || null,
+        })
+        .eq('id', selectedUser.id);
+        
+      if (error) throw error;
+      
+      return userData;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success("Usuario actualizado exitosamente");
+      setIsEditDialogOpen(false);
+    },
+    onError: (error) => {
+      console.error('Error updating user:', error);
+      toast.error("Error al actualizar usuario");
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedUser) throw new Error("No user selected");
+      
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', selectedUser.id);
+        
+      if (error) throw error;
+      
+      return selectedUser.id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success("Usuario eliminado exitosamente");
+      setIsDeleteDialogOpen(false);
+    },
+    onError: (error) => {
+      console.error('Error deleting user:', error);
+      toast.error("Error al eliminar usuario");
+    }
+  });
+
   // Filter users based on search term and filters
   const filteredUsers = users.filter((user) => {
     const matchesSearch = 
@@ -103,69 +184,16 @@ const UserManagement = () => {
   // Calculate total pages
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
 
-  const handleCreateUser = async (userData: any) => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .insert([{
-          id: crypto.randomUUID(), // Generate a UUID
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          role: userData.role,
-          department: userData.department || null,
-        }]);
-        
-      if (error) throw error;
-      
-      toast.success("Usuario creado exitosamente");
-      setIsCreateDialogOpen(false);
-    } catch (error) {
-      console.error('Error creating user:', error);
-      toast.error("Error al crear usuario");
-    }
+  const handleCreateUser = (userData: any) => {
+    createUserMutation.mutate(userData);
   };
 
-  const handleEditUser = async (userData: any) => {
-    if (!selectedUser) return;
-    
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          first_name: userData.firstName,
-          last_name: userData.lastName,
-          role: userData.role,
-          department: userData.department || null,
-        })
-        .eq('id', selectedUser.id);
-        
-      if (error) throw error;
-      
-      toast.success("Usuario actualizado exitosamente");
-      setIsEditDialogOpen(false);
-    } catch (error) {
-      console.error('Error updating user:', error);
-      toast.error("Error al actualizar usuario");
-    }
+  const handleEditUser = (userData: any) => {
+    updateUserMutation.mutate(userData);
   };
 
-  const handleDeleteUser = async () => {
-    if (!selectedUser) return;
-    
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', selectedUser.id);
-        
-      if (error) throw error;
-      
-      toast.success("Usuario eliminado exitosamente");
-      setIsDeleteDialogOpen(false);
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error("Error al eliminar usuario");
-    }
+  const handleDeleteUser = () => {
+    deleteUserMutation.mutate();
   };
 
   const openEditDialog = (user: User) => {

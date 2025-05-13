@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { UnisonLogo } from './UnisonLogo';
+import { ArrowLeft, Mail } from 'lucide-react';
 
 interface ForgotPasswordFormProps {
   onSwitchToLogin: () => void;
@@ -31,10 +32,10 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSwitch
     try {
       await forgotPassword(email);
       setIsSubmitted(true);
-      toast.success("Enlace de restablecimiento enviado. Revise su correo electrónico.");
+      toast.success("Correo de restablecimiento enviado");
     } catch (error) {
-      console.error("Error during password reset:", error);
-      toast.error("Error al enviar el enlace: " + (error instanceof Error ? error.message : "Error desconocido"));
+      console.error("Error sending reset password:", error);
+      toast.error("Error al enviar el correo de restablecimiento");
     } finally {
       setIsLoading(false);
     }
@@ -44,9 +45,12 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSwitch
     <Card className="w-full max-w-md shadow-lg animate-fade-in">
       <CardHeader className="space-y-2 items-center text-center">
         <UnisonLogo size="md" />
-        <CardTitle className="text-2xl font-bold">Restablecer Contraseña</CardTitle>
+        <CardTitle className="text-2xl font-bold">Recuperar Contraseña</CardTitle>
         <CardDescription>
-          Ingrese su correo electrónico para recibir un enlace de restablecimiento
+          {!isSubmitted ? 
+            "Ingrese su correo electrónico y le enviaremos un enlace para restablecer su contraseña" :
+            "Revise su bandeja de entrada y siga las instrucciones enviadas a su correo electrónico"
+          }
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -65,40 +69,41 @@ export const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onSwitch
                 aria-label="Correo Electrónico"
               />
             </div>
+            
             <Button 
               type="submit" 
               className="w-full bg-unison-blue hover:bg-blue-700" 
               disabled={isLoading}
             >
-              {isLoading ? "Enviando..." : "Enviar Enlace de Restablecimiento"}
+              {isLoading ? (
+                <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2"></div>
+              ) : (
+                <Mail className="mr-2 h-4 w-4" />
+              )}
+              {isLoading ? "Enviando..." : "Enviar Instrucciones"}
             </Button>
           </form>
         ) : (
-          <div className="space-y-4 text-center">
-            <div className="rounded-full w-16 h-16 bg-green-100 flex items-center justify-center mx-auto">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <p>
-              Hemos enviado un correo electrónico a <strong>{email}</strong> con instrucciones para restablecer su contraseña.
+          <div className="p-4 bg-green-50 border border-green-200 rounded-md text-center">
+            <p className="text-green-800 mb-4">
+              Hemos enviado un correo electrónico con instrucciones para restablecer su contraseña a <strong>{email}</strong>.
             </p>
-            <p className="text-sm text-muted-foreground">
-              Si no recibe el correo electrónico en unos minutos, revise su carpeta de spam o inténtelo de nuevo.
+            <p className="text-sm text-gray-600">
+              Si no recibe el correo dentro de unos minutos, revise su carpeta de spam.
             </p>
           </div>
         )}
       </CardContent>
       <CardFooter className="flex justify-center">
-        <p className="text-sm text-center text-muted-foreground">
-          <button 
-            type="button" 
-            onClick={onSwitchToLogin}
-            className="text-unison-blue hover:underline font-medium"
-          >
-            Volver al inicio de sesión
-          </button>
-        </p>
+        <Button 
+          variant="ghost" 
+          onClick={onSwitchToLogin}
+          disabled={isLoading}
+          className="flex items-center text-sm"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Volver al inicio de sesión
+        </Button>
       </CardFooter>
     </Card>
   );

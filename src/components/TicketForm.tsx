@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { translateCategory, getCategoriesByRole, UserRole } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 const TicketForm: React.FC = () => {
   const { user } = useAuth();
@@ -29,14 +30,37 @@ const TicketForm: React.FC = () => {
       return;
     }
     
+    if (!user) {
+      toast.error('Debe iniciar sesión para crear un ticket');
+      return;
+    }
+    
     setIsSubmitting(true);
     
-    // In a real application, this would be an API call to create a ticket
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Generate a ticket number
+      const ticketNumber = `TK-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+      
+      const { data, error } = await supabase
+        .from('tickets')
+        .insert([
+          {
+            ticket_number: ticketNumber,
+            title,
+            description,
+            category,
+            creator_id: user.id,
+            status: 'nuevo',
+            priority: 'media', // Default priority
+          }
+        ]);
+        
+      if (error) {
+        throw error;
+      }
       
       toast.success('Ticket creado exitosamente');
+      
       // Reset form
       setTitle('');
       setDescription('');

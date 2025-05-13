@@ -42,9 +42,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
     try {
       await register(firstName, lastName, email, password, role);
       toast.success("Registro exitoso");
+      onSwitchToLogin(); // Redirect to login page after successful registration
     } catch (error) {
       console.error("Error during registration:", error);
-      toast.error("Error al registrarse: " + (error instanceof Error ? error.message : "Error desconocido"));
+      if (error instanceof Error) {
+        toast.error("Error al registrarse: " + error.message);
+      } else {
+        toast.error("Error al registrarse: Error desconocido");
+      }
     } finally {
       setIsLoading(false);
     }

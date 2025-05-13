@@ -1,95 +1,84 @@
 
 import React from 'react';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Line, LineChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LineChartViewProps {
   selectedCategory: string | null;
 }
 
 export const LineChartView: React.FC<LineChartViewProps> = ({ selectedCategory }) => {
-  // Mock data for time series
-  const data = [
-    { day: 'Lun', hardware: 4.2, software: 3.5, red: 6.8, acceso: 2.5, otros: 3.0 },
-    { day: 'Mar', hardware: 3.8, software: 4.0, red: 5.5, acceso: 2.8, otros: 3.2 },
-    { day: 'Mié', hardware: 5.0, software: 3.2, red: 4.8, acceso: 3.0, otros: 2.8 },
-    { day: 'Jue', hardware: 4.5, software: 3.8, red: 5.2, acceso: 2.6, otros: 2.5 },
-    { day: 'Vie', hardware: 3.6, software: 4.2, red: 4.0, acceso: 2.4, otros: 2.9 },
-    { day: 'Sáb', hardware: 2.8, software: 3.0, red: 3.5, acceso: 2.0, otros: 2.2 },
-    { day: 'Dom', hardware: 2.5, software: 2.8, red: 3.2, acceso: 1.8, otros: 2.0 },
-  ];
-
+  // This would ideally fetch time series data from the database
+  // For now, we'll generate mock data that simulates a database query response
+  const fetchResolutionTimeData = async () => {
+    // In a real implementation, this would query ticket resolution times by day
+    // Here we'll generate some mock time-series data
+    const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    
+    // Base data
+    let mockData = days.map(day => ({
+      day,
+      'all': Math.floor(Math.random() * 8) + 1, // 1-8 hours
+      'hardware': Math.floor(Math.random() * 6) + 2, // 2-7 hours
+      'software': Math.floor(Math.random() * 5) + 1, // 1-5 hours
+      'redes': Math.floor(Math.random() * 9) + 3, // 3-11 hours
+      'wifi_campus': Math.floor(Math.random() * 4) + 1, // 1-4 hours
+      'acceso_biblioteca': Math.floor(Math.random() * 3) + 1, // 1-3 hours
+      'problemas_lms': Math.floor(Math.random() * 7) + 2, // 2-8 hours
+      'correo_institucional': Math.floor(Math.random() * 6) + 1, // 1-6 hours
+      'sistema_calificaciones': Math.floor(Math.random() * 5) + 2, // 2-6 hours
+      'software_academico': Math.floor(Math.random() * 8) + 3, // 3-10 hours
+    }));
+    
+    // If we had real data, we would query the database like this:
+    /*
+    let query = supabase.rpc('get_resolution_time_by_day');
+    
+    if (selectedCategory && selectedCategory !== 'all') {
+      query = query.eq('category', selectedCategory);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('Error fetching resolution time data:', error);
+      throw error;
+    }
+    
+    return data;
+    */
+    
+    // For now, return our mock data
+    return mockData;
+  };
+  
+  const { data = [] } = useQuery({
+    queryKey: ['resolutionTimeData', selectedCategory],
+    queryFn: fetchResolutionTimeData
+  });
+  
+  // Determine which line to show based on selected category
+  const categoryKey = selectedCategory && selectedCategory !== 'all' ? selectedCategory : 'all';
+  
   return (
-    <ChartContainer
-      config={{
-        hardware: { color: '#9b87f5', label: 'Hardware' },
-        software: { color: '#7E69AB', label: 'Software' },
-        red: { color: '#6E59A5', label: 'Red' },
-        acceso: { color: '#D6BCFA', label: 'Acceso' },
-        otros: { color: '#E5DEFF', label: 'Otros' },
-      }}
-    >
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-          <XAxis dataKey="day" />
-          <YAxis domain={[0, 'auto']} tickFormatter={(value) => `${value}h`} />
-          <ChartTooltip 
-            content={<ChartTooltipContent />} 
-          />
-          <Legend />
-          {!selectedCategory || selectedCategory === 'Hardware' ? (
-            <Line
-              type="monotone"
-              dataKey="hardware"
-              stroke="#9b87f5"
-              strokeWidth={2}
-              activeDot={{ r: 6 }}
-              dot={{ r: 4 }}
-            />
-          ) : null}
-          {!selectedCategory || selectedCategory === 'Software' ? (
-            <Line
-              type="monotone"
-              dataKey="software"
-              stroke="#7E69AB"
-              strokeWidth={2}
-              activeDot={{ r: 6 }}
-              dot={{ r: 4 }}
-            />
-          ) : null}
-          {!selectedCategory || selectedCategory === 'Red' ? (
-            <Line
-              type="monotone"
-              dataKey="red"
-              stroke="#6E59A5"
-              strokeWidth={2}
-              activeDot={{ r: 6 }}
-              dot={{ r: 4 }}
-            />
-          ) : null}
-          {!selectedCategory || selectedCategory === 'Acceso' ? (
-            <Line
-              type="monotone"
-              dataKey="acceso"
-              stroke="#D6BCFA"
-              strokeWidth={2}
-              activeDot={{ r: 6 }}
-              dot={{ r: 4 }}
-            />
-          ) : null}
-          {!selectedCategory || selectedCategory === 'Otros' ? (
-            <Line
-              type="monotone"
-              dataKey="otros"
-              stroke="#E5DEFF"
-              strokeWidth={2}
-              activeDot={{ r: 6 }}
-              dot={{ r: 4 }}
-            />
-          ) : null}
-        </LineChart>
-      </ResponsiveContainer>
-    </ChartContainer>
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart
+        data={data}
+        margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+      >
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="day" />
+        <YAxis label={{ value: 'Horas', angle: -90, position: 'insideLeft' }} />
+        <Tooltip formatter={(value) => [`${value} horas`, 'Tiempo promedio']} />
+        <Line 
+          type="monotone" 
+          dataKey={categoryKey} 
+          stroke="#3b82f6" 
+          activeDot={{ r: 8 }} 
+          name="Tiempo de resolución" 
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 };

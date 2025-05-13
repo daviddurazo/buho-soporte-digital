@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Wifi, Book, HelpCircle, FileText, Loader2 } from 'lucide-react';
@@ -7,7 +7,6 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
-import { Ticket } from '@/types';
 
 export const StudentDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -30,10 +29,27 @@ export const StudentDashboard: React.FC = () => {
     return data || [];
   };
   
+  const fetchServiceStatus = async () => {
+    // In a real app, this would fetch from a status monitoring service
+    // Here we'll return mock data until such a service is implemented
+    return {
+      wifi_campus: 'operational',
+      biblioteca_virtual: 'operational',
+      plataforma_lms: 'degraded',
+      portal_estudiantes: 'operational',
+      correo_institucional: 'operational'
+    };
+  };
+  
   const { data: tickets = [], isLoading, error } = useQuery({
     queryKey: ['studentTickets', user?.id],
     queryFn: fetchStudentTickets,
     enabled: !!user,
+  });
+  
+  const { data: services = {} } = useQuery({
+    queryKey: ['serviceStatus'],
+    queryFn: fetchServiceStatus,
   });
   
   return (
@@ -151,32 +167,57 @@ export const StudentDashboard: React.FC = () => {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span>WiFi Campus</span>
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Operativo
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  services.wifi_campus === 'operational' ? 'bg-green-100 text-green-800' : 
+                  services.wifi_campus === 'degraded' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {services.wifi_campus === 'operational' ? 'Operativo' : 
+                   services.wifi_campus === 'degraded' ? 'Lento' : 'Caído'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Biblioteca Virtual</span>
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Operativo
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  services.biblioteca_virtual === 'operational' ? 'bg-green-100 text-green-800' : 
+                  services.biblioteca_virtual === 'degraded' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {services.biblioteca_virtual === 'operational' ? 'Operativo' : 
+                   services.biblioteca_virtual === 'degraded' ? 'Lento' : 'Caído'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Plataforma LMS</span>
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                  Lento
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  services.plataforma_lms === 'operational' ? 'bg-green-100 text-green-800' : 
+                  services.plataforma_lms === 'degraded' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {services.plataforma_lms === 'operational' ? 'Operativo' : 
+                   services.plataforma_lms === 'degraded' ? 'Lento' : 'Caído'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Portal Estudiantes</span>
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Operativo
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  services.portal_estudiantes === 'operational' ? 'bg-green-100 text-green-800' : 
+                  services.portal_estudiantes === 'degraded' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {services.portal_estudiantes === 'operational' ? 'Operativo' : 
+                   services.portal_estudiantes === 'degraded' ? 'Lento' : 'Caído'}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Correo Institucional</span>
-                <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Operativo
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  services.correo_institucional === 'operational' ? 'bg-green-100 text-green-800' : 
+                  services.correo_institucional === 'degraded' ? 'bg-yellow-100 text-yellow-800' : 
+                  'bg-red-100 text-red-800'
+                }`}>
+                  {services.correo_institucional === 'operational' ? 'Operativo' : 
+                   services.correo_institucional === 'degraded' ? 'Lento' : 'Caído'}
                 </span>
               </div>
             </div>
