@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,6 +15,11 @@ interface ServiceStatus {
   plataforma_lms: 'operational' | 'degraded' | 'down';
   portal_estudiantes: 'operational' | 'degraded' | 'down';
   correo_institucional: 'operational' | 'degraded' | 'down';
+}
+
+// Define the type for the RPC response
+interface ServiceStatusResponse {
+  [key: string]: string; // Generic response object with string values
 }
 
 export const StudentDashboard: React.FC = () => {
@@ -42,16 +48,22 @@ export const StudentDashboard: React.FC = () => {
     try {
       // Use the RPC function to get service status
       const { data, error } = await supabase
-        .rpc('get_service_status') as { data: ServiceStatus | null; error: any };
+        .rpc('get_service_status') as { data: ServiceStatusResponse | null; error: any };
       
       if (error) {
         console.error('Error fetching service status:', error);
         throw error;
       }
       
-      // If we got data, return it
+      // If we got data, return it as ServiceStatus
       if (data) {
-        return data;
+        return {
+          wifi_campus: data.wifi_campus as 'operational' | 'degraded' | 'down',
+          biblioteca_virtual: data.biblioteca_virtual as 'operational' | 'degraded' | 'down',
+          plataforma_lms: data.plataforma_lms as 'operational' | 'degraded' | 'down',
+          portal_estudiantes: data.portal_estudiantes as 'operational' | 'degraded' | 'down',
+          correo_institucional: data.correo_institucional as 'operational' | 'degraded' | 'down'
+        };
       }
       
       throw new Error('No service status data returned');
