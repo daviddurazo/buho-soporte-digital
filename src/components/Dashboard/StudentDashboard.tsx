@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,16 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 
-// Define a type for the service status
-interface ServiceStatus {
-  wifi_campus: 'operational' | 'degraded' | 'down';
-  biblioteca_virtual: 'operational' | 'degraded' | 'down';
-  plataforma_lms: 'operational' | 'degraded' | 'down';
-  portal_estudiantes: 'operational' | 'degraded' | 'down';
-  correo_institucional: 'operational' | 'degraded' | 'down';
-}
-
-// Define the type for the RPC response
+// Define a type for the service status response from RPC
 interface ServiceStatusResponse {
   [key: string]: string; // Generic response object with string values
 }

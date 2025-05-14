@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
@@ -14,12 +13,6 @@ interface CategoryData {
   count: number;
   displayName?: string;
   fill?: string;
-}
-
-// Define the type for the RPC response
-interface CategoryCount {
-  category: string;
-  count: string; // It's returned as string from Postgres
 }
 
 export const BarChartView: React.FC<BarChartViewProps> = ({ onCategoryClick, selectedCategory }) => {
