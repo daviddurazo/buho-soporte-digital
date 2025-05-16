@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -36,11 +35,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
-        
         if (session?.user) {
           fetchUserProfile(session.user.id);
         } else {
@@ -50,10 +47,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      
       if (session?.user) {
         fetchUserProfile(session.user.id);
       } else {
@@ -73,16 +68,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .select('*')
         .eq('id', userId)
         .single();
-      
+
       if (error) {
-        console.error('Error fetching user profile:', error);
+        if (error.code === "PGRST116") {
+          console.warn("🔎 No se encontró perfil para el usuario aún.");
+        } else {
+          console.error('Error fetching user profile:', error);
+        }
         setUser(null);
       } else if (data) {
         const userProfile: AppUser = {
           id: userId,
           firstName: data.first_name,
           lastName: data.last_name,
-          email: `${data.first_name.toLowerCase()}.${data.last_name.toLowerCase()}@unison.mx`, // Generate email
+          email: `${data.first_name.toLowerCase()}.${data.last_name.toLowerCase()}@unison.mx`,
           role: data.role as UserRole,
           createdAt: data.created_at || new Date().toISOString(),
           updatedAt: data.updated_at || new Date().toISOString(),
@@ -91,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null);
       }
-      
+
       setIsLoading(false);
     } catch (error) {
       console.error('Error processing user profile:', error);
@@ -106,9 +105,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         password,
       });
-      
+
       if (error) throw error;
-      
       return { error: null };
     } catch (error) {
       console.error('Error signing in:', error);
@@ -118,7 +116,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, userData: any) => {
     try {
-      // Register the user with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -126,35 +123,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             first_name: userData.firstName,
             last_name: userData.lastName,
-            role: userData.role
-          }
-        }
+            role: userData.role,
+          },
+        },
       });
-      
-      if (error) throw error;
-      
-      // Create a profile entry for the user
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert([
-            {
-              id: data.user.id,
-              first_name: userData.firstName,
-              last_name: userData.lastName,
-              role: userData.role
-            }
-          ]);
-        
-        if (profileError) {
-          console.error('Error creating profile:', profileError);
-          return { error: profileError };
-        }
-      }
-      
+
+      if (error) throw new Error(`Auth sign-up error: ${error.message}`);
+      const user = data.user;
+      if (!user) throw new Error('Usuario no fue creado correctamente');
+
+      const { error: profileError } = await supabase.from('profiles').insert([
+        {
+          id: user.id,
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          role: userData.role,
+        },
+      ]);
+
+      if (profileError) throw new Error(`Error al crear perfil: ${profileError.message}`);
       return { error: null };
     } catch (error) {
-      console.error('Error signing up:', error);
+      console.error('Error en signUp:', error);
       return { error };
     }
   };
@@ -168,7 +158,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Implement the required methods to fix TypeScript errors
   const login = async (email: string, password: string) => {
     const { error } = await signIn(email, password);
     if (error) throw error;
@@ -178,7 +167,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await signOut();
   };
 
-  const register = async (firstName: string, lastName: string, email: string, password: string, role: UserRole) => {
+  const register = async (
+    firstName: string,
+    lastName: string,
+    email: string,
+    password: string,
+    role: UserRole
+  ) => {
     const userData = { firstName, lastName, role };
     const { error } = await signUp(email, password, userData);
     if (error) throw error;
@@ -189,9 +184,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: window.location.origin + '/auth?mode=reset-password',
       });
-      
+
       if (error) throw error;
-      
     } catch (error) {
       console.error('Error sending password reset:', error);
       throw error;
